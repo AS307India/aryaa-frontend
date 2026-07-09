@@ -1,0 +1,23 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Firebase / Google credentials — NEVER commit these
+/app/google-services.json
+/app/*firebase-adminsdk*.json
+/app/*service-account*.json
+
+# Backend lives in its own repo (AS307India/aryaa-backend) — never commit here
+/apps/backend/

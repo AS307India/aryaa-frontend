@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Starting theme for Android 12+ SplashScreen API -->
+    <style name="Theme.Aryaa.Starting" parent="Theme.SplashScreen">
+        <!-- Background of the system splash screen -->
+        <item name="windowSplashScreenBackground">@color/navy</item>
+        <!-- Icon of the system splash screen -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
+        <!-- Post-splash theme to switch to when application is loaded -->
+        <item name="postSplashScreenTheme">@style/Theme.Aryaa</item>
+    </style>
+
+    <!-- Normal theme (unused for activity but required by SplashScreen post-theme) -->
+    <style name="Theme.Aryaa" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/navy</item>
+        <item name="android:navigationBarColor">@color/navy</item>
+    </style>
+
+    <!-- Medical ID High Contrast Light theme for lock-screen usage -->
+    <style name="Theme.Aryaa.MedicalId" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
