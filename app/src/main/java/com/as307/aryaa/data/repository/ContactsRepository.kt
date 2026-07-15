@@ -11,7 +11,7 @@ interface ContactsRepository {
      */
     fun getContacts(): Flow<List<ContactDto>>
 
-    suspend fun addContact(name: String, phone: String, relationship: String): Result<ContactDto>
+    suspend fun addContact(name: String, phone: String, relationship: String, isNearby: String = "SOMETIMES"): Result<ContactDto>
 
     suspend fun removeContact(id: String): Result<Unit>
 }

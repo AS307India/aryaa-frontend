@@ -58,7 +58,7 @@ private val RELATIONSHIPS = listOf("FAMILY", "FRIEND", "COLLEAGUE", "NEIGHBOUR",
 fun AddContactBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, phone: String, relationship: String) -> Unit,
+    onConfirm: (name: String, phone: String, relationship: String, isNearby: String) -> Unit,
     isLoading: Boolean = false,
     errorMessage: String? = null
 ) {
@@ -66,6 +66,7 @@ fun AddContactBottomSheet(
     var phone by remember { mutableStateOf("") }
     var relationship by remember { mutableStateOf("FAMILY") }
     var relationshipExpanded by remember { mutableStateOf(false) }
+    var isNearby by remember { mutableStateOf("SOMETIMES") }
     var localError by remember { mutableStateOf<String?>(null) }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -189,6 +190,33 @@ fun AddContactBottomSheet(
                 }
             }
 
+            Text(
+                text = "Is this person likely to be near you if something happens?",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = AryaaColors.White
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("YES" to "Yes", "NO" to "No", "SOMETIMES" to "Sometimes").forEach { (value, label) ->
+                    val isSelected = isNearby == value
+                    Button(
+                        onClick = { isNearby = value },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) AryaaColors.Saffron else AryaaColors.NavyBorder,
+                            contentColor = if (isSelected) AryaaColors.White else AryaaColors.Slate
+                        )
+                    ) {
+                        Text(label, fontSize = 13.sp)
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
 
             // CTA button
@@ -202,7 +230,7 @@ fun AddContactBottomSheet(
                         else -> null
                     }
                     if (localError == null) {
-                        onConfirm(name.trim(), phone.trim(), relationship)
+                        onConfirm(name.trim(), phone.trim(), relationship, isNearby)
                     }
                 },
                 enabled = !isLoading,

@@ -60,9 +60,9 @@ class ContactsViewModel @Inject constructor(
         observeContacts()
     }
 
-    fun addContact(name: String, phone: String, relationship: String, onDone: (Boolean) -> Unit) {
+    fun addContact(name: String, phone: String, relationship: String, isNearby: String, onDone: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val result = contactsRepository.addContact(name, phone, relationship)
+            val result = contactsRepository.addContact(name, phone, relationship, isNearby)
             result.fold(
                 onSuccess = { onDone(true) },
                 onFailure = { error ->

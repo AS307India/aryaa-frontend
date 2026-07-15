@@ -3,6 +3,8 @@ package com.as307.aryaa.ui.screens.sos
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -27,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Phone
 import com.as307.aryaa.ui.theme.AryaaMono
 
 import androidx.compose.ui.unit.dp
@@ -238,12 +241,21 @@ fun SosScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(AryaaColors.NavyCard, RoundedCornerShape(8.dp))
+                        .clickable {
+                            android.util.Log.d("SosScreen", "Location warning clicked!")
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Location unavailable — SOS will still work, location won't be shared.",
+                        text = "Location unavailable — Tap to enable. SOS will still work, location won't be shared.",
                         color = AryaaColors.Slate,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal,
@@ -415,17 +427,17 @@ fun SosScreen(
             }
         }
 
-        // --- BOTTOM CALM CANCEL SOS BUTTON ---
+        // --- BOTTOM ACTION BUTTONS ---
         val currentState = uiState
-        if (currentState is SosUiState.Active) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (currentState is SosUiState.Active) {
                 val accuracy = currentState.accuracy
                 if (accuracy != null && accuracy > 500.0) {
                     Row(
@@ -445,7 +457,38 @@ fun SosScreen(
                         )
                     }
                 }
+            }
 
+            // Persistent Call 112 Button
+            Button(
+                onClick = {
+                    val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                    context.startActivity(dialIntent)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AryaaColors.Crimson,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Phone,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "CALL 112",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (currentState is SosUiState.Active) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier

@@ -50,8 +50,12 @@ class AryaaApplication : Application() {
             }
             manager.createNotificationChannel(activeChannel)
 
-            // Delete old channel to ensure custom sound setting takes effect on upgrade
+            // Delete old channel versions to force clean recreation with correct settings.
+            // Channels are immutable after creation — any device that received v1 or v2
+            // before the alarm sound was added will silently keep using the old (silent)
+            // settings unless we delete and recreate under a new ID.
             manager.deleteNotificationChannel("aryaa_sos_incoming")
+            manager.deleteNotificationChannel("aryaa_sos_incoming_v2")
 
             val soundUri = android.net.Uri.parse("android.resource://$packageName/${R.raw.aryaa_emergency_alert}")
             val audioAttributes = android.media.AudioAttributes.Builder()
@@ -59,10 +63,15 @@ class AryaaApplication : Application() {
                 .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
 
+            android.util.Log.d("SOUND_DEBUG", "Creating channel aryaa_sos_incoming_v3 with soundUri=$soundUri")
+
+            // IMPORTANCE_MAX (not IMPORTANCE_HIGH) is required to guarantee audio
+            // override over foreground apps and lock screen. IMPORTANCE_HIGH only
+            // ensures heads-up display — it does not guarantee alarm-level audio.
             val incomingChannel = NotificationChannel(
-                "aryaa_sos_incoming_v2",
+                "aryaa_sos_incoming_v3",
                 "Emergency SOS Alerts",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_MAX
             ).apply {
                 description = "Urgent alerts when a trusted contact needs help. Cannot be silenced."
                 setSound(soundUri, audioAttributes)
@@ -74,6 +83,7 @@ class AryaaApplication : Application() {
                 setBypassDnd(true)
             }
             manager.createNotificationChannel(incomingChannel)
+            android.util.Log.d("SOUND_DEBUG", "Channel aryaa_sos_incoming_v3 created successfully")
         }
     }
 }

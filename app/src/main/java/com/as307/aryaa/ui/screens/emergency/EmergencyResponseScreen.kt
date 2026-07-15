@@ -11,6 +11,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,6 +53,9 @@ fun EmergencyResponseScreen(
     viewModel: EmergencyResponseViewModel = hiltViewModel()
 ) {
     val emergencyOpt by viewModel.activeEmergency.collectAsState()
+    val playbookOpt by viewModel.playbookState.collectAsState()
+    val isResponding by viewModel.isResponding.collectAsState()
+
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
@@ -79,7 +85,6 @@ fun EmergencyResponseScreen(
         ) {
             val emergency = emergencyOpt
             if (emergency == null) {
-                // Empty state fallback (should not normally occur unless dismissed)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -125,7 +130,7 @@ fun EmergencyResponseScreen(
                         tint = AryaaColors.White,
                         modifier = Modifier.size(56.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "EMERGENCY ALERT",
                         color = AryaaColors.White,
@@ -152,290 +157,354 @@ fun EmergencyResponseScreen(
                         fontWeight = FontWeight.Normal,
                         textAlign = TextAlign.Center
                     )
-                }
-            }
 
-            // MIDDLE SECTION — Location card
-            Spacer(modifier = Modifier.height(24.dp))
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = AryaaColors.NavyMid
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
-                ) {
-                    Text(
-                        text = "LOCATION",
-                        color = AryaaColors.White.copy(alpha = 0.5f),
-                        fontSize = 12.sp,
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    val lat = emergency.latitude
-                    val lng = emergency.longitude
-                    val w3w = emergency.w3wAddress
-
-                    if (lat != null && lng != null) {
-                        if (!w3w.isNullOrBlank()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        clipboardManager.setText(AnnotatedString("///$w3w"))
-                                        Toast.makeText(context, "Copied address ///$w3w", Toast.LENGTH_SHORT).show()
-                                    }
-                            ) {
-                                Text(
-                                    text = "///$w3w",
-                                    color = AryaaColors.Saffron,
-                                    fontSize = 24.sp,
-                                    fontFamily = JetBrainsMonoFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Icon(
-                                    imageVector = Icons.Filled.ContentCopy,
-                                    contentDescription = "Copy",
-                                    tint = AryaaColors.White.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                    // Differentiated Visual styling for closest Local Responder
+                    if (emergency.tier == "LOCAL_RESPONDER") {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    clipboardManager.setText(AnnotatedString("$lat, $lng"))
-                                    Toast.makeText(context, "Copied coordinates $lat, $lng", Toast.LENGTH_SHORT).show()
-                                }
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AryaaColors.Saffron)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "Lat: $lat",
-                                    color = AryaaColors.White,
-                                    fontSize = 16.sp,
-                                    fontFamily = JetBrainsMonoFamily
-                                )
-                                Text(
-                                    text = "Lng: $lng",
-                                    color = AryaaColors.White,
-                                    fontSize = 16.sp,
-                                    fontFamily = JetBrainsMonoFamily
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Filled.ContentCopy,
-                                contentDescription = "Copy",
-                                tint = AryaaColors.White.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        val accuracy = emergency.accuracy
-                        if (accuracy != null) {
-                            val roundedAccuracy = Math.round(accuracy)
-                            val accuracyText = if (roundedAccuracy > 1000) {
-                                val kmValue = String.format(java.util.Locale.US, "%.1f", accuracy / 1000.0)
-                                "Accuracy: ~${kmValue}km"
-                            } else {
-                                "Accuracy: ~${roundedAccuracy}m"
-                            }
-
-                            val color = if (accuracy <= 100.0) {
-                                AryaaColors.Slate
-                            } else {
-                                AryaaColors.Amber
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = accuracyText,
-                                color = color,
-                                fontSize = 14.sp,
-                                fontFamily = InterFamily
-                            )
-                        }
-                    } else {
-                        Column {
-                            Text(
-                                text = "Location unavailable",
-                                color = AryaaColors.Saffron,
-                                fontSize = 18.sp,
-                                fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Try calling to find their location",
-                                color = AryaaColors.White.copy(alpha = 0.6f),
-                                fontSize = 14.sp,
-                                fontFamily = InterFamily
+                                text = "🚨 LOCAL RESPONDER — You are closest nearby!",
+                                color = AryaaColors.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
             }
 
-            // BOTTOM SECTION — Action buttons (stacked, full-width)
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Playbook Coordination Status: "I am Responding!" Action Banner
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val accuracy = emergency.accuracy
-                if (accuracy != null && accuracy > 500.0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                if (!isResponding) {
+                    Button(
+                        onClick = { viewModel.respondToSos(emergency.sosEventId) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AryaaColors.Saffron,
+                            contentColor = AryaaColors.White
+                        ),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(AryaaColors.AmberDim, RoundedCornerShape(8.dp))
-                            .padding(12.dp)
+                            .height(58.dp)
                     ) {
                         Text(
-                            text = "⚠️ Location may be imprecise (weak signal, possibly indoors). Consider calling first to confirm exact location.",
-                            color = AryaaColors.Amber,
-                            fontSize = 13.sp,
-                            fontFamily = InterFamily,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
+                            text = "👉 I AM RESPONDING!",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = InterFamily
                         )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF10B981)) // Emerald
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = AryaaColors.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "✓ YOU ARE RESPONDING (coordinating rescue)",
+                                color = AryaaColors.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Playbook Steps
+            Spacer(modifier = Modifier.height(24.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Header
+                Text(
+                    text = "RESCUER PLAYBOOK",
+                    color = AryaaColors.White.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                    fontFamily = InterFamily,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp
+                )
+
+                val lat = playbookOpt?.latitude ?: emergency.latitude
+                val lng = playbookOpt?.longitude ?: emergency.longitude
+                val w3w = playbookOpt?.w3wAddress ?: emergency.w3wAddress
+                val victimPhone = playbookOpt?.victimPhone ?: emergency.userPhone
+
+                // Step 1: Call Victim
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AryaaColors.NavyMid),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "STEP 1: Check On Victim",
+                            color = AryaaColors.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Call ${emergency.userName} immediately to confirm the alert context and check if they are safe.",
+                            color = AryaaColors.Slate,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$victimPhone"))
+                                context.startActivity(dialIntent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.Phone, contentDescription = null, tint = AryaaColors.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("CALL ${emergency.userName.uppercase()}", color = AryaaColors.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
 
-                val hasLocation = (emergency.latitude != null && emergency.longitude != null)
+                // Step 2: Contact Local Responders
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AryaaColors.NavyMid),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "STEP 2: Coordinate Nearby Responders",
+                            color = AryaaColors.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Below are the active responders coordinating to rescue ${emergency.userName}:",
+                            color = AryaaColors.Slate,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                // 1. PRIMARY ACTION — "OPEN IN GOOGLE MAPS"
+                        val responders = playbookOpt?.responders ?: emptyList()
+                        if (responders.isEmpty()) {
+                            Text(
+                                text = "No other responders have checked in yet.",
+                                color = AryaaColors.Slate.copy(alpha = 0.7f),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                responders.forEach { responder ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(AryaaColors.Navy.copy(alpha = 0.4f))
+                                            .padding(10.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Person,
+                                            contentDescription = null,
+                                            tint = AryaaColors.Saffron,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(responder.name, color = AryaaColors.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                            Text(responder.phone, color = AryaaColors.Slate, fontSize = 11.sp)
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${responder.phone}"))
+                                                context.startActivity(dialIntent)
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Filled.Phone, contentDescription = "Call responder", tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Step 3: Call 112 with Template
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AryaaColors.NavyMid),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "STEP 3: Escalate to Police (112)",
+                            color = AryaaColors.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Call official emergency dispatch services. Copied coordinates and template copy pre-fills for quick speech copy-paste.",
+                            color = AryaaColors.Slate,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val template = "Calling on behalf of ${emergency.userName}, last location " +
+                                (if (lat != null && lng != null) "$lat, $lng" else "unknown") +
+                                (if (!w3w.isNullOrBlank()) ", what3words: ///$w3w" else "")
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AryaaColors.Navy)
+                                .border(1.dp, AryaaColors.NavyBorder, RoundedCornerShape(8.dp))
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = template,
+                                color = AryaaColors.Slate,
+                                fontSize = 12.sp,
+                                fontFamily = JetBrainsMonoFamily
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(template))
+                                Toast.makeText(context, "Speech template copied to clipboard!", Toast.LENGTH_SHORT).show()
+                                val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                                context.startActivity(dialIntent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AryaaColors.Crimson),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("CALL 112 & COPY SPEECH TEMPLATE", color = AryaaColors.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                // Step 4: Coordinate with others
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AryaaColors.NavyMid),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "STEP 4: Share & Coordinate Rescue",
+                            color = AryaaColors.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Share the emergency details with official emergency dispatch or local community groups.",
+                            color = AryaaColors.Slate,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = {
+                                val responderNames = (playbookOpt?.responders ?: emptyList()).map { it.name }
+                                val responderSummary = if (responderNames.isEmpty()) "None yet" else responderNames.joinToString(", ")
+                                val shareText = "🆘 ${emergency.userName} needs help!\n\n" +
+                                        (if (lat != null && lng != null) "Location: https://www.google.com/maps?q=$lat,$lng\n" else "") +
+                                        (if (!w3w.isNullOrBlank()) "What3Words: ///$w3w\n" else "") +
+                                        "Active Responders: $responderSummary\n" +
+                                        "Received via ARYAA at $timeStr"
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+                            },
+                            border = BorderStroke(1.dp, AryaaColors.White.copy(alpha = 0.3f)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AryaaColors.White),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.Share, contentDescription = null, tint = AryaaColors.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("SHARE COORDINATION DETAILS", color = AryaaColors.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                // Maps Button (Floating / Auxiliary)
+                val hasLocation = (lat != null && lng != null)
                 Button(
                     onClick = {
-                        val latVal = emergency.latitude
-                        val lngVal = emergency.longitude
-                        if (latVal != null && lngVal != null) {
+                        if (lat != null && lng != null) {
                             val labelEncoded = Uri.encode(emergency.userName)
-                            val gmmIntentUri = Uri.parse("geo:0,0?q=$latVal,$lngVal($labelEncoded)")
+                            val gmmIntentUri = Uri.parse("geo:0,0?q=$lat,$lng($labelEncoded)")
                             val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
                                 setPackage("com.google.android.apps.maps")
                             }
                             try {
                                 context.startActivity(mapIntent)
                             } catch (e: Exception) {
-                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$latVal,$lngVal"))
+                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng"))
                                 context.startActivity(webIntent)
                             }
                         }
                     },
                     enabled = hasLocation,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF10B981), // Emerald green
-                        disabledContainerColor = Color(0xFF10B981).copy(alpha = 0.4f),
-                        contentColor = AryaaColors.White,
-                        disabledContentColor = AryaaColors.White.copy(alpha = 0.6f)
+                        containerColor = Color(0xFF10B981),
+                        disabledContainerColor = Color(0xFF10B981).copy(alpha = 0.4f)
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                 ) {
-                    Text(
-                        text = if (hasLocation) "OPEN IN GOOGLE MAPS" else "LOCATION UNAVAILABLE",
-                        fontFamily = PlayfairDisplayFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
+                    Text(if (hasLocation) "OPEN LIVE MAP DIRECTION" else "LOCATION DIRECTION UNAVAILABLE", fontWeight = FontWeight.Bold)
                 }
 
-                // 2. SECONDARY ACTION — "CALL [USER NAME]"
-                Button(
-                    onClick = {
-                        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:${emergency.userPhone}")
-                        }
-                        context.startActivity(dialIntent)
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF6B1A), // Saffron
-                        contentColor = AryaaColors.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Phone,
-                        contentDescription = "Call",
-                        tint = AryaaColors.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "CALL ${emergency.userName.uppercase()}",
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                }
-
-                // 3. TERTIARY ACTION — "SHARE LOCATION"
-                OutlinedButton(
-                    onClick = {
-                        val latVal = emergency.latitude
-                        val lngVal = emergency.longitude
-                        val shareText = "🆘 ${emergency.userName} needs help!\n\n" +
-                                (if (latVal != null && lngVal != null) "Location: https://www.google.com/maps?q=$latVal,$lngVal\n" else "") +
-                                (if (!emergency.w3wAddress.isNullOrBlank()) "What3Words: ///${emergency.w3wAddress}\n" else "") +
-                                "Received via ARYAA at $timeStr"
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, shareText)
-                        }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share via"))
-                    },
-                    border = BorderStroke(1.dp, AryaaColors.White.copy(alpha = 0.3f)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AryaaColors.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = "Share",
-                        tint = AryaaColors.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "SHARE LOCATION",
-                        fontFamily = InterFamily,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
-                }
-
-                // 4. DISMISS BUTTON
-                Spacer(modifier = Modifier.height(16.dp))
+                // Dismiss Button
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp),
+                        .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(

@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class AddContactRequest(
     val name: String,
     val phone: String,
-    val relationship: String
+    val relationship: String,
+    val isNearby: String = "SOMETIMES"
 )

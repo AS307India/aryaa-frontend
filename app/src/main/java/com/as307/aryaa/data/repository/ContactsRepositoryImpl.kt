@@ -49,9 +49,10 @@ class ContactsRepositoryImpl @Inject constructor(
     override suspend fun addContact(
         name: String,
         phone: String,
-        relationship: String
+        relationship: String,
+        isNearby: String
     ): Result<ContactDto> {
-        val result = safeCall { api.addContact(AddContactRequest(name, phone, relationship)) }
+        val result = safeCall { api.addContact(AddContactRequest(name, phone, relationship, isNearby)) }
         result.getOrNull()?.let { dto ->
             // Insert into cache immediately after confirmed backend response
             contactDao.insert(dto.toEntity())
@@ -120,11 +121,11 @@ class ContactsRepositoryImpl @Inject constructor(
 
 fun ContactEntity.toDto() = ContactDto(
     id = id, name = name, phone = phone,
-    relationship = relationship, userId = userId,
+    relationship = relationship, isNearby = isNearby, userId = userId,
     createdAt = "", updatedAt = ""
 )
 
 fun ContactDto.toEntity() = ContactEntity(
     id = id, name = name, phone = phone,
-    relationship = relationship, userId = userId
+    relationship = relationship, isNearby = isNearby, userId = userId
 )

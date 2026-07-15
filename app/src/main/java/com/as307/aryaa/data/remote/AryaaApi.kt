@@ -87,4 +87,14 @@ interface AryaaApi {
 
     @GET("api/deadzone/status")
     suspend fun getDeadZoneStatus(): Response<com.as307.aryaa.data.remote.dto.DeadZoneStatusContainer>
+
+    @POST("api/sos/{eventId}/respond")
+    suspend fun respondToSos(
+        @Path("eventId") eventId: String
+    ): Response<Unit>
+
+    @GET("api/sos/{eventId}/playbook")
+    suspend fun getPlaybook(
+        @Path("eventId") eventId: String
+    ): Response<com.as307.aryaa.data.remote.dto.PlaybookDto>
 }

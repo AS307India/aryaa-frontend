@@ -31,6 +31,10 @@ class DeadZoneViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.e(any(), any()) } returns 0
+        every { android.util.Log.e(any(), any(), any()) } returns 0
 
         // Default to no active session
         coEvery { preferences.getActiveCheckInId() } returns null
@@ -41,6 +45,7 @@ class DeadZoneViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkStatic(android.util.Log::class)
     }
 
     @Test

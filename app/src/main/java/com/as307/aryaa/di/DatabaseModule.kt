@@ -40,6 +40,12 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `contacts` ADD COLUMN `isNearby` TEXT NOT NULL DEFAULT 'SOMETIMES'")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AryaaDatabase {
@@ -48,7 +54,8 @@ object DatabaseModule {
             AryaaDatabase::class.java,
             "aryaa_database"
         )
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        .fallbackToDestructiveMigration()
         .build()
     }
 

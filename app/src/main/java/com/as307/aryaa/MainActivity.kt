@@ -100,8 +100,13 @@ class MainActivity : ComponentActivity() {
         }
 
         handleEmergencyIntent(intent)
-
-        val startDestination = intent.getStringExtra("start_destination") ?: Destination.Splash.route
+ 
+        val isEmergency = intent?.action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE"
+        val startDestination = if (isEmergency) {
+            Destination.Home.route
+        } else {
+            intent.getStringExtra("start_destination") ?: Destination.Splash.route
+        }
 
         setContent {
             AryaaTheme {
@@ -151,6 +156,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleEmergencyIntent(intent: android.content.Intent?) {
+        android.util.Log.d("EMERGENCY_DEBUG", "onCreate/onNewIntent action=" + 
+            intent?.action + ", extras=" + 
+            intent?.extras?.keySet()?.joinToString())
         if (intent?.action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE") {
             val sosData = com.as307.aryaa.ui.screens.emergency.EmergencySosData(
                 sosEventId = intent.getStringExtra("sosEventId") ?: "",
@@ -160,7 +168,8 @@ class MainActivity : ComponentActivity() {
                 longitude = intent.getStringExtra("longitude")?.toDoubleOrNull(),
                 w3wAddress = intent.getStringExtra("w3wAddress"),
                 triggeredAt = intent.getStringExtra("triggeredAt") ?: "",
-                accuracy = intent.getStringExtra("accuracy")?.toDoubleOrNull()
+                accuracy = intent.getStringExtra("accuracy")?.toDoubleOrNull(),
+                tier = intent.getStringExtra("tier") ?: "FAMILY"
             )
             emergencyStateHolder.setActive(sosData)
         }

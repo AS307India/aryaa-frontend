@@ -9,5 +9,6 @@ data class ContactEntity(
     val name: String,
     val phone: String,
     val relationship: String,
+    val isNearby: String = "SOMETIMES",
     val userId: String
 )

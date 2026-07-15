@@ -8,6 +8,7 @@ data class ContactDto(
     val name: String,
     val phone: String,
     val relationship: String,
+    val isNearby: String = "SOMETIMES",
     val userId: String,
     val createdAt: String,
     val updatedAt: String,

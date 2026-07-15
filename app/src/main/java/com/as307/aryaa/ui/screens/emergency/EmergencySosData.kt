@@ -8,5 +8,6 @@ data class EmergencySosData(
     val longitude: Double?,
     val w3wAddress: String?,
     val triggeredAt: String,
-    val accuracy: Double? = null
+    val accuracy: Double? = null,
+    val tier: String = "FAMILY"
 )

@@ -64,17 +64,16 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         if (message.data["type"] == "SOS_ALERT") {
-            val userName = message.data["userName"] ?: "A trusted contact"
-            val lat = message.data["latitude"] ?: ""
-            val lng = message.data["longitude"] ?: ""
-            val w3w = message.data["w3wAddress"] ?: ""
+            val userName = message.data["victimName"] ?: message.data["userName"] ?: "A trusted contact"
+            val lat = message.data["lat"] ?: message.data["latitude"] ?: ""
+            val lng = message.data["lng"] ?: message.data["longitude"] ?: ""
+            val w3w = message.data["w3w"] ?: message.data["w3wAddress"] ?: ""
             val triggeredAt = message.data["triggeredAt"] ?: ""
             val userPhone = message.data["userPhone"] ?: ""
-            val sosEventId = message.data["sosEventId"] ?: ""
+            val sosEventId = message.data["eventId"] ?: message.data["sosEventId"] ?: ""
             val accuracy = message.data["accuracy"] ?: ""
+            val tier = message.data["tier"] ?: "FAMILY"
 
-            val title = "🆘 $userName needs help!"
-            
             val locationString = when {
                 w3w.isNotBlank() -> "///$w3w ($lat, $lng)"
                 lat.isNotBlank() && lng.isNotBlank() -> "Location: $lat, $lng"
@@ -98,7 +97,11 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
                 formatter.format(java.time.Instant.now()) + " IST"
             }
 
-            val body = "$locationString at $timeStr"
+            val defaultTitle = "🆘 $userName needs help!"
+            val defaultBody = "$locationString at $timeStr"
+
+            val title = message.notification?.title ?: defaultTitle
+            val body = message.notification?.body ?: defaultBody
 
             showIncomingSosNotification(
                 title = title,
@@ -110,7 +113,8 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
                 longitude = lng,
                 w3wAddress = w3w,
                 triggeredAt = triggeredAt,
-                accuracy = accuracy
+                accuracy = accuracy,
+                tier = tier
             )
         }
     }
@@ -125,9 +129,11 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
         longitude: String,
         w3wAddress: String,
         triggeredAt: String,
-        accuracy: String
+        accuracy: String,
+        tier: String
     ) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationId = sosEventId.hashCode()
 
         // Deep Link Action - Target MainActivity with OPEN_EMERGENCY_RESPONSE action
         val viewIntent = Intent(this, MainActivity::class.java).apply {
@@ -140,11 +146,12 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             putExtra("triggeredAt", triggeredAt)
             putExtra("userPhone", userPhone)
             putExtra("accuracy", accuracy)
+            putExtra("tier", tier)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val viewPendingIntent = PendingIntent.getActivity(
             this,
-            201,
+            notificationId, // Unique request code per notification
             viewIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -157,7 +164,7 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setColor(0xFFEF4444.toInt()) // Crimson
+            .setColor(0xFFFF6B1A.toInt()) // Saffron color #FF6B1A
             .setColorized(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -177,7 +184,7 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$userPhone"))
             val callPendingIntent = PendingIntent.getActivity(
                 this,
-                202,
+                notificationId + 1, // Unique call request code
                 callIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
@@ -188,11 +195,11 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             )
         }
 
-        val notificationId = sosEventId.hashCode()
+        Log.d("SOUND_DEBUG", "Posting notification id=$notificationId on channel=$CHANNEL_ID soundUri=$soundUri")
         notificationManager.notify(notificationId, builder.build())
     }
 
     companion object {
-        const val CHANNEL_ID = "aryaa_sos_incoming_v2"
+        const val CHANNEL_ID = "aryaa_sos_incoming_v3"
     }
 }

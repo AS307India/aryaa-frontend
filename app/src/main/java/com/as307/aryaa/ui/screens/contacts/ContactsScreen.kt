@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
@@ -177,127 +178,302 @@ fun ContactsScreen(
                 )
 
                 is ContactsViewModel.UiState.Success -> {
+                    val nearbyContacts = state.contacts.filter { it.isNearby == "YES" }
+                    val familyContacts = state.contacts.filter { it.isNearby != "YES" }
+
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.contacts, key = { it.id }) { contact ->
-                            val view = LocalView.current
-                            var hasTriggeredHaptic by remember { mutableStateOf(false) }
-
-                            val dismissState = rememberSwipeToDismissBoxState(
-                                confirmValueChange = { value ->
-                                    when (value) {
-                                        SwipeToDismissBoxValue.EndToStart -> {
-                                            contactToDelete = contact
-                                        }
-                                        SwipeToDismissBoxValue.StartToEnd -> {
-                                            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                                                data = Uri.parse("tel:${contact.phone}")
-                                            }
-                                            context.startActivity(dialIntent)
-                                        }
-                                        else -> {}
+                        // Prominent warning if 0 nearby responders configured
+                        if (nearbyContacts.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(androidx.compose.ui.graphics.Color(0xFFFEF3C7)) // Amber 100
+                                        .border(1.dp, androidx.compose.ui.graphics.Color(0xFFF59E0B), RoundedCornerShape(12.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Error,
+                                            contentDescription = null,
+                                            tint = androidx.compose.ui.graphics.Color(0xFFD97706)
+                                        )
+                                        Text(
+                                            text = "Warning: 0 nearby responders configured. Set contacts who live or work nearby to YES for instant local rescue coordination.",
+                                            color = androidx.compose.ui.graphics.Color(0xFF92400E),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
                                     }
-                                    false
-                                },
-                                positionalThreshold = { distance -> distance * 0.3f }
-                            )
-
-                            LaunchedEffect(dismissState.progress) {
-                                if (dismissState.progress >= 0.3f && dismissState.targetValue != dismissState.currentValue) {
-                                    if (!hasTriggeredHaptic) {
-                                        view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
-                                        hasTriggeredHaptic = true
-                                    }
-                                } else if (dismissState.progress < 0.3f) {
-                                    hasTriggeredHaptic = false
                                 }
                             }
+                        }
 
-                            SwipeToDismissBox(
-                                state = dismissState,
-                                backgroundContent = {
-                                    val direction = dismissState.dismissDirection
-                                    val color = when (direction) {
-                                        SwipeToDismissBoxValue.EndToStart -> AryaaColors.Crimson.copy(alpha = 0.85f)
-                                        SwipeToDismissBoxValue.StartToEnd -> androidx.compose.ui.graphics.Color(0xFF10B981) // Emerald
-                                        else -> androidx.compose.ui.graphics.Color.Transparent
-                                    }
-                                    val scale = dismissState.progress.coerceIn(0.5f, 1f)
-                                    val alpha = dismissState.progress.coerceIn(0f, 1f)
+                        // Nearby Responders section
+                        if (nearbyContacts.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Nearby Responders",
+                                    color = AryaaColors.Slate,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            }
+                            items(nearbyContacts, key = { "nearby_" + it.id }) { contact ->
+                                val view = LocalView.current
+                                var hasTriggeredHaptic by remember { mutableStateOf(false) }
 
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(color)
-                                            .padding(horizontal = 20.dp)
-                                    ) {
-                                        if (direction == SwipeToDismissBoxValue.StartToEnd) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .align(Alignment.CenterStart)
-                                                    .graphicsLayer(
-                                                        scaleX = scale,
-                                                        scaleY = scale,
-                                                        alpha = alpha
-                                                    ),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Phone,
-                                                    contentDescription = "Call",
-                                                    tint = AryaaColors.White,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "Call ${contact.name}",
-                                                    color = AryaaColors.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 16.sp
-                                                )
+                                val dismissState = rememberSwipeToDismissBoxState(
+                                    confirmValueChange = { value ->
+                                        when (value) {
+                                            SwipeToDismissBoxValue.EndToStart -> {
+                                                contactToDelete = contact
                                             }
-                                        } else if (direction == SwipeToDismissBoxValue.EndToStart) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .align(Alignment.CenterEnd)
-                                                    .graphicsLayer(
-                                                        scaleX = scale,
-                                                        scaleY = scale,
-                                                        alpha = alpha
-                                                    ),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = "Delete",
-                                                    color = AryaaColors.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 16.sp
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Icon(
-                                                    imageVector = Icons.Filled.Delete,
-                                                    contentDescription = "Delete",
-                                                    tint = AryaaColors.White,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
+                                            SwipeToDismissBoxValue.StartToEnd -> {
+                                                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                                    data = Uri.parse("tel:${contact.phone}")
+                                                }
+                                                context.startActivity(dialIntent)
+                                            }
+                                            else -> {}
+                                        }
+                                        false
+                                    },
+                                    positionalThreshold = { distance -> distance * 0.3f }
+                                )
+
+                                LaunchedEffect(dismissState.progress) {
+                                    if (dismissState.progress >= 0.3f && dismissState.targetValue != dismissState.currentValue) {
+                                        if (!hasTriggeredHaptic) {
+                                            view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+                                            hasTriggeredHaptic = true
+                                        }
+                                    } else if (dismissState.progress < 0.3f) {
+                                        hasTriggeredHaptic = false
+                                    }
+                                }
+
+                                SwipeToDismissBox(
+                                    state = dismissState,
+                                    backgroundContent = {
+                                        val direction = dismissState.dismissDirection
+                                        val color = when (direction) {
+                                            SwipeToDismissBoxValue.EndToStart -> AryaaColors.Crimson.copy(alpha = 0.85f)
+                                            SwipeToDismissBoxValue.StartToEnd -> androidx.compose.ui.graphics.Color(0xFF10B981) // Emerald
+                                            else -> androidx.compose.ui.graphics.Color.Transparent
+                                        }
+                                        val scale = dismissState.progress.coerceIn(0.5f, 1f)
+                                        val alpha = dismissState.progress.coerceIn(0f, 1f)
+
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(color)
+                                                .padding(horizontal = 20.dp)
+                                        ) {
+                                            if (direction == SwipeToDismissBoxValue.StartToEnd) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterStart)
+                                                        .graphicsLayer(
+                                                            scaleX = scale,
+                                                            scaleY = scale,
+                                                            alpha = alpha
+                                                        ),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Phone,
+                                                        contentDescription = "Call",
+                                                        tint = AryaaColors.White,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "Call ${contact.name}",
+                                                        color = AryaaColors.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 16.sp
+                                                    )
+                                                }
+                                            } else if (direction == SwipeToDismissBoxValue.EndToStart) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterEnd)
+                                                        .graphicsLayer(
+                                                            scaleX = scale,
+                                                            scaleY = scale,
+                                                            alpha = alpha
+                                                        ),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "Delete",
+                                                        color = AryaaColors.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 16.sp
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Delete,
+                                                        contentDescription = "Delete",
+                                                        tint = AryaaColors.White,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
                                             }
                                         }
+                                    },
+                                    content = {
+                                        ContactCard(
+                                            contact = contact,
+                                            isDeleting = deletingId == contact.id,
+                                            onDeleteClick = { contactToDelete = contact }
+                                        )
                                     }
-                                },
-                                content = {
-                                    ContactCard(
-                                        contact = contact,
-                                        isDeleting = deletingId == contact.id,
-                                        onDeleteClick = { contactToDelete = contact }
-                                    )
-                                }
-                            )
+                                )
+                            }
                         }
+
+                        // Faraway Family & Friends section
+                        if (familyContacts.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Faraway Family & Friends",
+                                    color = AryaaColors.Slate,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            }
+                            items(familyContacts, key = { "family_" + it.id }) { contact ->
+                                val view = LocalView.current
+                                var hasTriggeredHaptic by remember { mutableStateOf(false) }
+
+                                val dismissState = rememberSwipeToDismissBoxState(
+                                    confirmValueChange = { value ->
+                                        when (value) {
+                                            SwipeToDismissBoxValue.EndToStart -> {
+                                                contactToDelete = contact
+                                            }
+                                            SwipeToDismissBoxValue.StartToEnd -> {
+                                                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                                    data = Uri.parse("tel:${contact.phone}")
+                                                }
+                                                context.startActivity(dialIntent)
+                                            }
+                                            else -> {}
+                                        }
+                                        false
+                                    },
+                                    positionalThreshold = { distance -> distance * 0.3f }
+                                )
+
+                                LaunchedEffect(dismissState.progress) {
+                                    if (dismissState.progress >= 0.3f && dismissState.targetValue != dismissState.currentValue) {
+                                        if (!hasTriggeredHaptic) {
+                                            view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+                                            hasTriggeredHaptic = true
+                                        }
+                                    } else if (dismissState.progress < 0.3f) {
+                                        hasTriggeredHaptic = false
+                                    }
+                                }
+
+                                SwipeToDismissBox(
+                                    state = dismissState,
+                                    backgroundContent = {
+                                        val direction = dismissState.dismissDirection
+                                        val color = when (direction) {
+                                            SwipeToDismissBoxValue.EndToStart -> AryaaColors.Crimson.copy(alpha = 0.85f)
+                                            SwipeToDismissBoxValue.StartToEnd -> androidx.compose.ui.graphics.Color(0xFF10B981) // Emerald
+                                            else -> androidx.compose.ui.graphics.Color.Transparent
+                                        }
+                                        val scale = dismissState.progress.coerceIn(0.5f, 1f)
+                                        val alpha = dismissState.progress.coerceIn(0f, 1f)
+
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(color)
+                                                .padding(horizontal = 20.dp)
+                                        ) {
+                                            if (direction == SwipeToDismissBoxValue.StartToEnd) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterStart)
+                                                        .graphicsLayer(
+                                                            scaleX = scale,
+                                                            scaleY = scale,
+                                                            alpha = alpha
+                                                        ),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Phone,
+                                                        contentDescription = "Call",
+                                                        tint = AryaaColors.White,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "Call ${contact.name}",
+                                                        color = AryaaColors.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 16.sp
+                                                    )
+                                                }
+                                            } else if (direction == SwipeToDismissBoxValue.EndToStart) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterEnd)
+                                                        .graphicsLayer(
+                                                            scaleX = scale,
+                                                            scaleY = scale,
+                                                            alpha = alpha
+                                                        ),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "Delete",
+                                                        color = AryaaColors.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 16.sp
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Delete,
+                                                        contentDescription = "Delete",
+                                                        tint = AryaaColors.White,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    },
+                                    content = {
+                                        ContactCard(
+                                            contact = contact,
+                                            isDeleting = deletingId == contact.id,
+                                            onDeleteClick = { contactToDelete = contact }
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
                         item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
@@ -356,10 +532,10 @@ fun ContactsScreen(
                     addError = null
                 }
             },
-            onConfirm = { name, phone, relationship ->
+            onConfirm = { name, phone, relationship, isNearby ->
                 addLoading = true
                 addError = null
-                viewModel.addContact(name, phone, relationship) { success ->
+                viewModel.addContact(name, phone, relationship, isNearby) { success ->
                     addLoading = false
                     if (success) {
                         scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -438,19 +614,47 @@ private fun ContactCard(
                 Text(text = contact.phone, color = AryaaColors.Slate, fontSize = 13.sp)
             }
             Spacer(modifier = Modifier.height(4.dp))
-            // Relationship badge
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(AryaaColors.Emerald.copy(alpha = 0.12f))
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            // Relationship and Proximity badges
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = contact.relationship.lowercase().replaceFirstChar { it.uppercase() },
-                    color = AryaaColors.Emerald,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(AryaaColors.Emerald.copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = contact.relationship.lowercase().replaceFirstChar { it.uppercase() },
+                        color = AryaaColors.Emerald,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                val proximityText = when (contact.isNearby) {
+                    "YES" -> "Nearby Responder"
+                    "NO" -> "Faraway / Family"
+                    else -> "Family / Sometimes Nearby"
+                }
+                val proximityColor = when (contact.isNearby) {
+                    "YES" -> AryaaColors.Saffron
+                    else -> AryaaColors.Slate
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(proximityColor.copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = proximityText,
+                        color = proximityColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 

@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
@@ -96,7 +97,22 @@ class SosService : Service() {
     private fun startSosForeground(sosEventId: String, contacts: List<SosContactSnapshot>, w3wAddress: String?) {
         // 1. Show notification immediately (within 5 seconds limit)
         val notification = createSosNotification(sosEventId)
-        startForeground(NOTIFICATION_ID, notification)
+        val hasLocation = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+                androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val type = if (hasLocation) {
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
+                } else {
+                    0
+                }
+            }
+            startForeground(NOTIFICATION_ID, notification, type)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
 
         // 2. Dispatch SMS Alerts asynchronously
         serviceScope.launch {
@@ -118,6 +134,34 @@ class SosService : Service() {
 
         // 3. Start continuous location updates (every 30 seconds)
         startLocationUpdates(sosEventId)
+
+        // 4. Launch Lock Screen Escalation Prompt Timers (2-min, 5-min, and 15-min)
+        serviceScope.launch {
+            kotlinx.coroutines.delay(2 * 60 * 1000L) // 2 minutes
+            showEscalationNotification(
+                id = 2002,
+                title = "⚠️ SOS active for 2 minutes",
+                body = "Still in danger? Tap to call 112 immediately."
+            )
+        }
+
+        serviceScope.launch {
+            kotlinx.coroutines.delay(5 * 60 * 1000L) // 5 minutes
+            showEscalationNotification(
+                id = 2005,
+                title = "⚠️ SOS active for 5 minutes",
+                body = "If you need police assistance, tap to call 112 now."
+            )
+        }
+
+        serviceScope.launch {
+            kotlinx.coroutines.delay(15 * 60 * 1000L) // 15 minutes
+            showEscalationNotification(
+                id = 2015,
+                title = "⚠️ SOS active for 15 minutes",
+                body = "Escalate to emergency services if needed — tap to call 112."
+            )
+        }
     }
 
 
@@ -328,8 +372,44 @@ class SosService : Service() {
             .build()
     }
 
+    private fun showEscalationNotification(id: Int, title: String, body: String) {
+        val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112")).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        val dialPendingIntent = PendingIntent.getActivity(
+            this,
+            id,
+            dialIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val soundUri = Uri.parse("android.resource://$packageName/${R.raw.aryaa_emergency_alert}")
+
+        val notification = NotificationCompat.Builder(this, "aryaa_sos_active")
+            .setSmallIcon(R.drawable.ic_notification_sos)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setColor(0xFFEF4444.toInt()) // Crimson
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
+            .setFullScreenIntent(dialPendingIntent, true) // Overlay on lock screen
+            .setAutoCancel(true)
+            .setContentIntent(dialPendingIntent)
+            .build()
+
+        val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        notificationManager.notify(id, notification)
+    }
+
     override fun onDestroy() {
         stopLocationUpdates()
+        val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        notificationManager.cancel(2002)
+        notificationManager.cancel(2005)
+        notificationManager.cancel(2015)
         serviceScope.cancel()
         super.onDestroy()
     }

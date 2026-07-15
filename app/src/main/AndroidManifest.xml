@@ -33,7 +33,7 @@
 
         <service
             android:name=".service.SosService"
-            android:foregroundServiceType="location"
+            android:foregroundServiceType="location|shortService"
             android:exported="false" />
 
         <service
