@@ -656,5 +656,76 @@ fun HomeScreen(
                 )
             }
         }
+
+        // Location Sharing Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(AryaaColors.NavyCard)
+                .border(
+                    1.dp,
+                    if (activeLocationShare != null) AryaaColors.Blue else AryaaColors.NavyBorder,
+                    RoundedCornerShape(20.dp)
+                )
+                .clickable { onNavigateToLocationShare() }
+                .padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(AryaaColors.Blue.copy(alpha = if (activeLocationShare != null) 0.20f else 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "📍",
+                        fontSize = 22.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Location Sharing",
+                            color = AryaaColors.White,
+                            fontFamily = InterFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        if (activeLocationShare != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(AryaaColors.Blue)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (activeLocationShare != null) {
+                            "Active — sharing with ${activeLocationShare.contactCount} contact${if (activeLocationShare.contactCount != 1) "s" else ""}"
+                        } else {
+                            "Share your live location with a contact"
+                        },
+                        color = if (activeLocationShare != null) AryaaColors.Blue else AryaaColors.Slate,
+                        fontFamily = InterFamily,
+                        fontSize = 13.sp
+                    )
+                }
+                Icon(
+                    Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = if (activeLocationShare != null) AryaaColors.Blue else AryaaColors.Slate,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
     }
 }
