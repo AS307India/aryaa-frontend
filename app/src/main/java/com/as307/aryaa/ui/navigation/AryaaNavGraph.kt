@@ -117,30 +117,34 @@ fun AryaaNavGraph(
                         val token = tokenStorage.getToken()
                         android.util.Log.i("TIMING_DATA", "AryaaNavGraph: ON_RESUME checked, token present: ${token != null}")
                         if (token != null) {
-                            sosRepository.getActiveIncoming().onSuccess { response ->
-                                android.util.Log.i("TIMING_DATA", "active-incoming poll response: $response")
-                                if (response.hasActiveIncoming && response.eventId != null) {
-                                    val current = emergencyStateHolder.activeEmergency.value
-                                    if (current == null || current.sosEventId != response.eventId) {
-                                        val data = com.as307.aryaa.ui.screens.emergency.EmergencySosData(
-                                            sosEventId = response.eventId,
-                                            userName = response.victimName ?: "A contact",
-                                            userPhone = "",
-                                            latitude = response.lat,
-                                            longitude = response.lng,
-                                            w3wAddress = response.w3w,
-                                            triggeredAt = response.triggeredAt ?: "",
-                                            accuracy = response.accuracy,
-                                            tier = response.tier ?: "FAMILY"
-                                        )
-                                        emergencyStateHolder.setActive(data)
-                                    }
-                                } else {
-                                    if (emergencyStateHolder.activeEmergency.value != null) {
-                                        emergencyStateHolder.clear()
+                            sosRepository.getActiveIncoming()
+                                .onSuccess { response ->
+                                    android.util.Log.i("TIMING_DATA", "active-incoming poll response: $response")
+                                    if (response.hasActiveIncoming && response.eventId != null) {
+                                        val current = emergencyStateHolder.activeEmergency.value
+                                        if (current == null || current.sosEventId != response.eventId) {
+                                            val data = com.as307.aryaa.ui.screens.emergency.EmergencySosData(
+                                                sosEventId = response.eventId,
+                                                userName = response.victimName ?: "A contact",
+                                                userPhone = "",
+                                                latitude = response.lat,
+                                                longitude = response.lng,
+                                                w3wAddress = response.w3w,
+                                                triggeredAt = response.triggeredAt ?: "",
+                                                accuracy = response.accuracy,
+                                                tier = response.tier ?: "FAMILY"
+                                            )
+                                            emergencyStateHolder.setActive(data)
+                                        }
+                                    } else {
+                                        if (emergencyStateHolder.activeEmergency.value != null) {
+                                            emergencyStateHolder.clear()
+                                        }
                                     }
                                 }
-                            }
+                                .onFailure { error ->
+                                    android.util.Log.e("TIMING_DATA", "active-incoming poll failed: $error")
+                                }
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("TIMING_DATA", "Failed to fetch active incoming alert: ${e.message}")
