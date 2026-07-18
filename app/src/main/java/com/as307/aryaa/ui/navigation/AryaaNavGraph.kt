@@ -108,11 +108,15 @@ fun AryaaNavGraph(
     val coroutineScope = rememberCoroutineScope()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
+        android.util.Log.d("TIMING_DATA", "AryaaNavGraph: DisposableEffect registered")
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            android.util.Log.d("TIMING_DATA", "AryaaNavGraph: Lifecycle event occurred: $event")
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 coroutineScope.launch {
                     try {
-                        if (tokenStorage.getToken() != null) {
+                        val token = tokenStorage.getToken()
+                        android.util.Log.d("TIMING_DATA", "AryaaNavGraph: ON_RESUME checked, token present: ${token != null}")
+                        if (token != null) {
                             sosRepository.getActiveIncoming().onSuccess { response ->
                                 android.util.Log.d("TIMING_DATA", "active-incoming poll response: $response")
                                 if (response.hasActiveIncoming && response.eventId != null) {
