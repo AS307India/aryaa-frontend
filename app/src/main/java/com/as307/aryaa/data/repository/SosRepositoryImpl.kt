@@ -58,6 +58,10 @@ class SosRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getActiveIncoming(): Result<com.as307.aryaa.data.remote.dto.ActiveIncomingSosResponse> {
+        return safeCall { api.getActiveIncoming() }
+    }
+
     private suspend fun <T> safeCall(
         call: suspend () -> Response<T>
     ): Result<T> = try {

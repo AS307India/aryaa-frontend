@@ -10,4 +10,5 @@ interface SosRepository {
     suspend fun duressCancel(sosEventId: String): Result<SosCancelResponse>
     suspend fun getSosHistory(): Result<List<SosHistoryItem>>
     suspend fun sendLocationUpdate(sosEventId: String, lat: Double, lng: Double, timestamp: String): Result<Unit>
+    suspend fun getActiveIncoming(): Result<com.as307.aryaa.data.remote.dto.ActiveIncomingSosResponse>
 }

@@ -97,4 +97,7 @@ interface AryaaApi {
     suspend fun getPlaybook(
         @Path("eventId") eventId: String
     ): Response<com.as307.aryaa.data.remote.dto.PlaybookDto>
+
+    @GET("api/sos/active-incoming")
+    suspend fun getActiveIncoming(): Response<com.as307.aryaa.data.remote.dto.ActiveIncomingSosResponse>
 }

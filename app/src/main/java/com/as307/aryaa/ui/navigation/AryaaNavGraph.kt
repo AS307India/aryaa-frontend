@@ -2,11 +2,14 @@ package com.as307.aryaa.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -99,6 +102,51 @@ fun AryaaNavGraph(
                 popUpTo(Destination.Home.route) { inclusive = false }
                 launchSingleTop = true
             }
+        }
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                coroutineScope.launch {
+                    try {
+                        if (tokenStorage.getToken() != null) {
+                            sosRepository.getActiveIncoming().onSuccess { response ->
+                                android.util.Log.d("TIMING_DATA", "active-incoming poll response: $response")
+                                if (response.hasActiveIncoming && response.eventId != null) {
+                                    val current = emergencyStateHolder.activeEmergency.value
+                                    if (current == null || current.sosEventId != response.eventId) {
+                                        val data = com.as307.aryaa.ui.screens.emergency.EmergencySosData(
+                                            sosEventId = response.eventId,
+                                            userName = response.victimName ?: "A contact",
+                                            userPhone = "",
+                                            latitude = response.lat,
+                                            longitude = response.lng,
+                                            w3wAddress = response.w3w,
+                                            triggeredAt = response.triggeredAt ?: "",
+                                            accuracy = response.accuracy,
+                                            tier = response.tier ?: "FAMILY"
+                                        )
+                                        emergencyStateHolder.setActive(data)
+                                    }
+                                } else {
+                                    if (emergencyStateHolder.activeEmergency.value != null) {
+                                        emergencyStateHolder.clear()
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("TIMING_DATA", "Failed to fetch active incoming alert: ${e.message}")
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
