@@ -57,6 +57,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Android 12+ SplashScreen API
         val splashScreen = installSplashScreen()
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+        
         super.onCreate(savedInstanceState)
 
         // Request required runtime permissions at startup

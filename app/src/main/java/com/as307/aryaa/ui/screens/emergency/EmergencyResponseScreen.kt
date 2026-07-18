@@ -60,6 +60,12 @@ fun EmergencyResponseScreen(
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
 
+    LaunchedEffect(emergencyOpt) {
+        if (emergencyOpt == null) {
+            onDismiss()
+        }
+    }
+
     // Pulse animation for Crimson alert banner
     val infiniteTransition = rememberInfiniteTransition(label = "banner_pulse")
     val pulseScale by infiniteTransition.animateFloat(
