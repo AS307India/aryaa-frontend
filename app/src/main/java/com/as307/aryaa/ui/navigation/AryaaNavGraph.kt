@@ -1,6 +1,7 @@
 package com.as307.aryaa.ui.navigation
 
 import androidx.compose.foundation.layout.padding
+import kotlinx.coroutines.delay
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -92,6 +93,8 @@ fun AryaaNavGraph(
     val activeEmergency by emergencyStateHolder.activeEmergency.collectAsState()
     LaunchedEffect(activeEmergency) {
         activeEmergency?.let {
+            // Add a short delay to prevent navigation race condition during initial graph setup
+            delay(500L)
             navController.navigate(Destination.EmergencyResponse.route) {
                 popUpTo(Destination.Home.route) { inclusive = false }
                 launchSingleTop = true
@@ -224,6 +227,12 @@ fun AryaaNavGraph(
                     },
                     onNavigateToDeadZone = {
                         navController.navigate(Destination.DeadZone.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    activeEmergency = activeEmergency,
+                    onNavigateToEmergencyResponse = {
+                        navController.navigate(Destination.EmergencyResponse.route) {
                             launchSingleTop = true
                         }
                     }

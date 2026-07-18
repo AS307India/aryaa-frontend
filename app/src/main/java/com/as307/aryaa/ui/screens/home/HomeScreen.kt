@@ -67,7 +67,9 @@ fun HomeScreen(
     onNavigateToSos: () -> Unit,
     onTriggerFakeCall: (Int) -> Unit,
     onNavigateToPracticeMode: () -> Unit,
-    onNavigateToDeadZone: () -> Unit
+    onNavigateToDeadZone: () -> Unit,
+    activeEmergency: com.as307.aryaa.ui.screens.emergency.EmergencySosData?,
+    onNavigateToEmergencyResponse: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     var userName by remember { mutableStateOf("") }
@@ -138,6 +140,27 @@ fun HomeScreen(
             ) {
                 Text(
                     text = "🚨 EMERGENCY SOS ACTIVE — TAP TO MANAGE",
+                    color = AryaaColors.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // Incoming Emergency Alert Banner (Saffron/Orange)
+        activeEmergency?.let { emergency ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AryaaColors.Saffron)
+                    .clickable(onClick = onNavigateToEmergencyResponse)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "🚨 EMERGENCY ALERT: ${emergency.userName} needs help! Tap to view location & playbook.",
                     color = AryaaColors.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,

@@ -200,6 +200,6 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     companion object {
-        const val CHANNEL_ID = "aryaa_sos_incoming_v3"
+        const val CHANNEL_ID = "aryaa_sos_incoming_v4"
     }
 }
