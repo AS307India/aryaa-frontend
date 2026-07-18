@@ -107,7 +107,8 @@ class MainActivity : ComponentActivity() {
 
         handleEmergencyIntent(intent)
  
-        val isEmergency = intent?.action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE"
+        val hasEmergencyExtras = intent?.hasExtra("sosEventId") == true && !intent.getStringExtra("sosEventId").isNullOrBlank()
+        val isEmergency = intent?.action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE" || hasEmergencyExtras
         val startDestination = if (isEmergency) {
             Destination.Home.route
         } else {
@@ -165,7 +166,9 @@ class MainActivity : ComponentActivity() {
         val action = intent?.action
         val keys = intent?.extras?.keySet()?.joinToString()
         android.util.Log.d("EMERGENCY_DEBUG", "handleEmergencyIntent started action=$action keys=$keys")
-        if (action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE") {
+        val hasEmergencyExtras = intent?.hasExtra("sosEventId") == true && !intent.getStringExtra("sosEventId").isNullOrBlank()
+        val isEmergency = action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE" || hasEmergencyExtras
+        if (isEmergency) {
             val eventId = intent.getStringExtra("sosEventId")
             val userName = intent.getStringExtra("userName")
             val userPhone = intent.getStringExtra("userPhone")
