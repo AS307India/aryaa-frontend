@@ -37,6 +37,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var profilePreferences: com.as307.aryaa.data.local.ProfilePreferences
     @Inject lateinit var emergencyStateHolder: com.as307.aryaa.ui.screens.emergency.EmergencyStateHolder
     @Inject lateinit var safetyLimitsPreferences: com.as307.aryaa.data.local.SafetyLimitsPreferences
+    @Inject lateinit var locationSharePreferences: com.as307.aryaa.data.local.LocationSharePreferences
+    @Inject lateinit var locationShareManager: com.as307.aryaa.service.LocationShareManager
+    @Inject lateinit var api: com.as307.aryaa.data.remote.AryaaApi
 
     private var isVolumeTriggerEnabled = true
 
@@ -131,7 +134,10 @@ class MainActivity : ComponentActivity() {
                         fakeCallPreferences = fakeCallPreferences,
                         startDestination = startDestination,
                         emergencyStateHolder = emergencyStateHolder,
-                        safetyLimitsPreferences = safetyLimitsPreferences
+                        safetyLimitsPreferences = safetyLimitsPreferences,
+                        locationSharePreferences = locationSharePreferences,
+                        locationShareManager = locationShareManager,
+                        api = api
                     )
                 }
             }

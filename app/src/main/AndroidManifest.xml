@@ -44,6 +44,11 @@
             android:exported="false" />
 
         <service
+            android:name=".service.LocationShareService"
+            android:foregroundServiceType="location|shortService"
+            android:exported="false" />
+
+        <service
             android:name=".service.AryaaFirebaseMessagingService"
             android:exported="false">
             <intent-filter>

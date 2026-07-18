@@ -100,4 +100,20 @@ interface AryaaApi {
 
     @GET("api/sos/active-incoming")
     suspend fun getActiveIncoming(): Response<com.as307.aryaa.data.remote.dto.ActiveIncomingSosResponse>
+
+    @POST("api/location-share/start")
+    suspend fun startLocationShare(
+        @Body request: com.as307.aryaa.data.remote.dto.LocationShareStartRequest
+    ): Response<com.as307.aryaa.data.remote.dto.LocationShareStartResponse>
+
+    @POST("api/location-share/{sessionId}/update")
+    suspend fun updateLocationShare(
+        @Path("sessionId") sessionId: String,
+        @Body request: com.as307.aryaa.data.remote.dto.LocationShareUpdateRequest
+    ): Response<Unit>
+
+    @POST("api/location-share/{sessionId}/stop")
+    suspend fun stopLocationShare(
+        @Path("sessionId") sessionId: String
+    ): Response<Unit>
 }

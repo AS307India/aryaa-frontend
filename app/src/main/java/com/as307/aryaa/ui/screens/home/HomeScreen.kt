@@ -51,6 +51,7 @@ import com.as307.aryaa.data.repository.ContactsRepository
 import com.as307.aryaa.data.repository.SosRepository
 import com.as307.aryaa.data.repository.DeadZoneRepository
 import com.as307.aryaa.service.SosServiceManager
+import com.as307.aryaa.service.ActiveLocationShare
 import com.as307.aryaa.ui.theme.AryaaColors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -69,7 +70,9 @@ fun HomeScreen(
     onNavigateToPracticeMode: () -> Unit,
     onNavigateToDeadZone: () -> Unit,
     activeEmergency: com.as307.aryaa.ui.screens.emergency.EmergencySosData?,
-    onNavigateToEmergencyResponse: () -> Unit
+    onNavigateToEmergencyResponse: () -> Unit,
+    activeLocationShare: ActiveLocationShare?,
+    onNavigateToLocationShare: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     var userName by remember { mutableStateOf("") }
@@ -161,6 +164,27 @@ fun HomeScreen(
             ) {
                 Text(
                     text = "🚨 EMERGENCY ALERT: ${emergency.userName} needs help! Tap to view location & playbook.",
+                    color = AryaaColors.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // Active Location Sharing Banner (Royal Blue)
+        activeLocationShare?.let { share ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AryaaColors.Blue)
+                    .clickable(onClick = onNavigateToLocationShare)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "📍 Sharing location with ${share.contactCount} contact${if (share.contactCount != 1) "s" else ""} — tap to manage",
                     color = AryaaColors.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,

@@ -44,6 +44,7 @@ import com.as307.aryaa.ui.screens.medicalid.MedicalIdEditScreen
 import com.as307.aryaa.ui.screens.practice.PracticeSosScreen
 import com.as307.aryaa.ui.screens.practice.PracticeSummaryScreen
 import com.as307.aryaa.ui.screens.deadzone.DeadZoneScreen
+import com.as307.aryaa.ui.screens.locationshare.LocationSharingScreen
 import com.as307.aryaa.ui.theme.AryaaColors
 
 // Routes that belong to the authenticated shell (show bottom nav)
@@ -66,7 +67,10 @@ fun AryaaNavGraph(
     sosServiceManager: com.as307.aryaa.service.SosServiceManager,
     fakeCallPreferences: FakeCallPreferences,
     emergencyStateHolder: com.as307.aryaa.ui.screens.emergency.EmergencyStateHolder,
-    safetyLimitsPreferences: com.as307.aryaa.data.local.SafetyLimitsPreferences
+    safetyLimitsPreferences: com.as307.aryaa.data.local.SafetyLimitsPreferences,
+    locationSharePreferences: com.as307.aryaa.data.local.LocationSharePreferences,
+    locationShareManager: com.as307.aryaa.service.LocationShareManager,
+    api: com.as307.aryaa.data.remote.AryaaApi
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -314,6 +318,12 @@ fun AryaaNavGraph(
                         navController.navigate(Destination.EmergencyResponse.route) {
                             launchSingleTop = true
                         }
+                    },
+                    activeLocationShare = locationShareManager.activeShare.collectAsState().value,
+                    onNavigateToLocationShare = {
+                        navController.navigate(Destination.LocationShare.route) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -463,6 +473,17 @@ fun AryaaNavGraph(
 
             composable(Destination.DeadZone.route) {
                 DeadZoneScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Destination.LocationShare.route) {
+                LocationSharingScreen(
+                    contactsRepository = contactsRepository,
+                    api = api,
+                    locationSharePreferences = locationSharePreferences,
+                    locationShareManager = locationShareManager,
+                    activeLocationShare = locationShareManager.activeShare.collectAsState().value,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

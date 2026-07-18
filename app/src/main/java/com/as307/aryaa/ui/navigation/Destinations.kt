@@ -25,4 +25,5 @@ sealed class Destination(val route: String) {
             "practice_summary?duration=$duration&contacts=$contacts&accuracy=$accuracy&duress=$duress"
     }
     object DeadZone : Destination("dead_zone")
+    object LocationShare : Destination("location_share")
 }
