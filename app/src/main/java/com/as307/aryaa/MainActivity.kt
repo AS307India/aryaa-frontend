@@ -177,6 +177,7 @@ class MainActivity : ComponentActivity() {
                 accuracy = intent.getStringExtra("accuracy")?.toDoubleOrNull(),
                 tier = intent.getStringExtra("tier") ?: "FAMILY"
             )
+            android.util.Log.d("EMERGENCY_DEBUG", "Extracted SosData: $sosData")
             emergencyStateHolder.setActive(sosData)
         }
     }

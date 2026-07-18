@@ -45,6 +45,7 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        android.util.Log.d("TIMING_DATA", "onMessageReceived fired at: " + java.time.Instant.now().toString() + " data: " + message.data)
         com.as307.aryaa.util.TestEnv.logDebug("FCM_SERVICE", "onMessageReceived from: ${message.from}")
         com.as307.aryaa.util.TestEnv.logDebug("FCM_SERVICE", "Message data payload: ${message.data}")
 
@@ -155,6 +156,7 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             viewIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        android.util.Log.d("EMERGENCY_DEBUG", "FCM showIncomingSosNotification: building viewPendingIntent with action=" + viewIntent.action + ", extras=" + viewIntent.extras?.keySet()?.joinToString())
 
         val soundUri = Uri.parse("android.resource://$packageName/${R.raw.aryaa_emergency_alert}")
 
