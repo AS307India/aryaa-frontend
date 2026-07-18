@@ -410,8 +410,12 @@ fun AryaaNavGraph(
                 com.as307.aryaa.ui.screens.emergency.EmergencyResponseScreen(
                     onDismiss = {
                         emergencyStateHolder.clear()
-                        navController.navigate(Destination.Home.route) {
-                            popUpTo(Destination.Home.route) { inclusive = false }
+                        coroutineScope.launch {
+                            val acknowledged = safetyLimitsPreferences.isSafetyLimitsAcknowledged()
+                            val targetRoute = if (acknowledged) Destination.Home.route else Destination.SafetyLimits.route
+                            navController.navigate(targetRoute) {
+                                popUpTo(targetRoute) { inclusive = true }
+                            }
                         }
                     }
                 )
