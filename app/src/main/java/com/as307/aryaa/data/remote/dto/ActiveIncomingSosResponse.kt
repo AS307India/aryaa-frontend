@@ -1,5 +1,8 @@
 package com.as307.aryaa.data.remote.dto
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ActiveIncomingSosResponse(
     val hasActiveIncoming: Boolean,
     val eventId: String? = null,
