@@ -41,17 +41,16 @@ class EmergencyResponseViewModel @Inject constructor(
     fun fetchPlaybook(eventId: String) {
         viewModelScope.launch {
             try {
+                android.util.Log.d("EMERGENCY_DEBUG", "fetchPlaybook started for eventId: $eventId")
                 val response = api.getPlaybook(eventId)
+                android.util.Log.d("EMERGENCY_DEBUG", "getPlaybook response code: ${response.code()} body: ${response.body()}")
                 if (response.isSuccessful) {
                     _playbookState.value = response.body()
-                    
-                    // Check if self is already in responders list (e.g. if we reopened the playbook)
-                    // We can verify by looking at the responses list, but since we don't have
-                    // the current user's phone directly in the viewmodel easily without more DI,
-                    // we can just let it check or let the button reflect when clicked.
+                } else {
+                    android.util.Log.e("EMERGENCY_DEBUG", "getPlaybook returned error code: ${response.code()} message: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("PLAYBOOK_VM", "Failed to fetch playbook: ${e.message}")
+                android.util.Log.e("EMERGENCY_DEBUG", "Failed to fetch playbook: ${e.message}", e)
             }
         }
     }
@@ -59,13 +58,17 @@ class EmergencyResponseViewModel @Inject constructor(
     fun respondToSos(eventId: String) {
         viewModelScope.launch {
             try {
+                android.util.Log.d("EMERGENCY_DEBUG", "respondToSos started for eventId: $eventId")
                 val response = api.respondToSos(eventId)
+                android.util.Log.d("EMERGENCY_DEBUG", "respondToSos response code: ${response.code()} body: ${response.body()}")
                 if (response.isSuccessful) {
                     _isResponding.value = true
                     fetchPlaybook(eventId)
+                } else {
+                    android.util.Log.e("EMERGENCY_DEBUG", "respondToSos returned error code: ${response.code()} message: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("PLAYBOOK_VM", "Failed to respond to SOS: ${e.message}")
+                android.util.Log.e("EMERGENCY_DEBUG", "Failed to respond to SOS: ${e.message}", e)
             }
         }
     }

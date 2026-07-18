@@ -162,20 +162,35 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleEmergencyIntent(intent: android.content.Intent?) {
-        android.util.Log.d("EMERGENCY_DEBUG", "onCreate/onNewIntent action=" + 
-            intent?.action + ", extras=" + 
-            intent?.extras?.keySet()?.joinToString())
-        if (intent?.action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE") {
+        val action = intent?.action
+        val keys = intent?.extras?.keySet()?.joinToString()
+        android.util.Log.d("EMERGENCY_DEBUG", "handleEmergencyIntent started action=$action keys=$keys")
+        if (action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE") {
+            val eventId = intent.getStringExtra("sosEventId")
+            val userName = intent.getStringExtra("userName")
+            val userPhone = intent.getStringExtra("userPhone")
+            val latitude = intent.getStringExtra("latitude")
+            val longitude = intent.getStringExtra("longitude")
+            val w3wAddress = intent.getStringExtra("w3wAddress")
+            val triggeredAt = intent.getStringExtra("triggeredAt")
+            val accuracy = intent.getStringExtra("accuracy")
+            val tier = intent.getStringExtra("tier")
+
+            android.util.Log.d("EMERGENCY_DEBUG", "Read launching intent extra values directly: " +
+                "sosEventId=$eventId, userName=$userName, userPhone=$userPhone, " +
+                "latitude=$latitude, longitude=$longitude, w3wAddress=$w3wAddress, " +
+                "triggeredAt=$triggeredAt, accuracy=$accuracy, tier=$tier")
+
             val sosData = com.as307.aryaa.ui.screens.emergency.EmergencySosData(
-                sosEventId = intent.getStringExtra("sosEventId") ?: "",
-                userName = intent.getStringExtra("userName") ?: "Unknown",
-                userPhone = intent.getStringExtra("userPhone") ?: "",
-                latitude = intent.getStringExtra("latitude")?.toDoubleOrNull(),
-                longitude = intent.getStringExtra("longitude")?.toDoubleOrNull(),
-                w3wAddress = intent.getStringExtra("w3wAddress"),
-                triggeredAt = intent.getStringExtra("triggeredAt") ?: "",
-                accuracy = intent.getStringExtra("accuracy")?.toDoubleOrNull(),
-                tier = intent.getStringExtra("tier") ?: "FAMILY"
+                sosEventId = eventId ?: "",
+                userName = userName ?: "Unknown",
+                userPhone = userPhone ?: "",
+                latitude = latitude?.toDoubleOrNull(),
+                longitude = longitude?.toDoubleOrNull(),
+                w3wAddress = w3wAddress,
+                triggeredAt = triggeredAt ?: "",
+                accuracy = accuracy?.toDoubleOrNull(),
+                tier = tier ?: "FAMILY"
             )
             android.util.Log.d("EMERGENCY_DEBUG", "Extracted SosData: $sosData")
             emergencyStateHolder.setActive(sosData)
