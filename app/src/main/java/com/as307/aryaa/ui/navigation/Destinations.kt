@@ -2,6 +2,7 @@ package com.as307.aryaa.ui.navigation
 
 sealed class Destination(val route: String) {
     object Splash : Destination("splash")
+    object SafetyLimits : Destination("safety_limits")
     object Login : Destination("login?email={email}") {
         fun createRoute(email: String = ""): String = "login?email=$email"
     }

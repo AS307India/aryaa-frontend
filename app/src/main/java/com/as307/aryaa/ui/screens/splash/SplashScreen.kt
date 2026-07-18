@@ -44,6 +44,7 @@ fun SplashScreen(
             when (event) {
                 SplashNavigationEvent.NavigateToHome -> onNavigate(Destination.Home.route)
                 SplashNavigationEvent.NavigateToLogin -> onNavigate(Destination.Login.createRoute())
+                SplashNavigationEvent.NavigateToSafetyLimits -> onNavigate(Destination.SafetyLimits.route)
             }
         }
     }

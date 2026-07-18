@@ -2,6 +2,7 @@ package com.as307.aryaa.ui.screens.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.as307.aryaa.data.local.SafetyLimitsPreferences
 import com.as307.aryaa.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val safetyLimitsPreferences: SafetyLimitsPreferences
 ) : ViewModel() {
 
     private val _navigationEvent = MutableSharedFlow<SplashNavigationEvent>()
@@ -29,7 +31,12 @@ class SplashViewModel @Inject constructor(
             delay(1500)
             val isLoggedIn = repository.isLoggedIn().first()
             if (isLoggedIn) {
-                _navigationEvent.emit(SplashNavigationEvent.NavigateToHome)
+                val acknowledged = safetyLimitsPreferences.isSafetyLimitsAcknowledged()
+                if (acknowledged) {
+                    _navigationEvent.emit(SplashNavigationEvent.NavigateToHome)
+                } else {
+                    _navigationEvent.emit(SplashNavigationEvent.NavigateToSafetyLimits)
+                }
             } else {
                 _navigationEvent.emit(SplashNavigationEvent.NavigateToLogin)
             }
@@ -40,4 +47,5 @@ class SplashViewModel @Inject constructor(
 sealed interface SplashNavigationEvent {
     object NavigateToHome : SplashNavigationEvent
     object NavigateToLogin : SplashNavigationEvent
+    object NavigateToSafetyLimits : SplashNavigationEvent
 }

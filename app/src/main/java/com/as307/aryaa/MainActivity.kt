@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var fakeCallPreferences: com.as307.aryaa.data.local.FakeCallPreferences
     @Inject lateinit var profilePreferences: com.as307.aryaa.data.local.ProfilePreferences
     @Inject lateinit var emergencyStateHolder: com.as307.aryaa.ui.screens.emergency.EmergencyStateHolder
+    @Inject lateinit var safetyLimitsPreferences: com.as307.aryaa.data.local.SafetyLimitsPreferences
 
     private var isVolumeTriggerEnabled = true
 
@@ -129,7 +130,8 @@ class MainActivity : ComponentActivity() {
                         sosServiceManager = sosServiceManager,
                         fakeCallPreferences = fakeCallPreferences,
                         startDestination = startDestination,
-                        emergencyStateHolder = emergencyStateHolder
+                        emergencyStateHolder = emergencyStateHolder,
+                        safetyLimitsPreferences = safetyLimitsPreferences
                     )
                 }
             }

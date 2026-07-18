@@ -33,6 +33,7 @@ import com.as307.aryaa.ui.screens.home.HomeScreen
 import com.as307.aryaa.ui.screens.sos.SosScreen
 import com.as307.aryaa.ui.screens.splash.SplashScreen
 import com.as307.aryaa.ui.screens.fakecall.FakeCallViewModel
+import com.as307.aryaa.ui.screens.onboarding.SafetyLimitsScreen
 import com.as307.aryaa.ui.screens.fakecall.FakeCallCountdownScreen
 import com.as307.aryaa.ui.screens.fakecall.FakeCallRingingScreen
 import com.as307.aryaa.ui.screens.fakecall.FakeCallInCallScreen
@@ -64,7 +65,8 @@ fun AryaaNavGraph(
     deadZoneRepository: com.as307.aryaa.data.repository.DeadZoneRepository,
     sosServiceManager: com.as307.aryaa.service.SosServiceManager,
     fakeCallPreferences: FakeCallPreferences,
-    emergencyStateHolder: com.as307.aryaa.ui.screens.emergency.EmergencyStateHolder
+    emergencyStateHolder: com.as307.aryaa.ui.screens.emergency.EmergencyStateHolder,
+    safetyLimitsPreferences: com.as307.aryaa.data.local.SafetyLimitsPreferences
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -198,6 +200,19 @@ fun AryaaNavGraph(
                 )
             }
 
+            composable(Destination.SafetyLimits.route) {
+                SafetyLimitsScreen(
+                    onContinue = {
+                        coroutineScope.launch {
+                            safetyLimitsPreferences.setSafetyLimitsAcknowledged(true)
+                            navController.navigate(Destination.Home.route) {
+                                popUpTo(Destination.SafetyLimits.route) { inclusive = true }
+                            }
+                        }
+                    }
+                )
+            }
+
             composable(
                 route = Destination.Login.route,
                 arguments = listOf(navArgument("email") {
@@ -216,8 +231,12 @@ fun AryaaNavGraph(
                         }
                     },
                     onLoginSuccess = {
-                        navController.navigate(Destination.Home.route) {
-                            popUpTo(Destination.Login.route) { inclusive = true }
+                        coroutineScope.launch {
+                            val acknowledged = safetyLimitsPreferences.isSafetyLimitsAcknowledged()
+                            val targetRoute = if (acknowledged) Destination.Home.route else Destination.SafetyLimits.route
+                            navController.navigate(targetRoute) {
+                                popUpTo(Destination.Login.route) { inclusive = true }
+                            }
                         }
                     },
                     viewModel = loginViewModel
@@ -242,8 +261,12 @@ fun AryaaNavGraph(
                         }
                     },
                     onSignupSuccess = {
-                        navController.navigate(Destination.Home.route) {
-                            popUpTo(Destination.Signup.route) { inclusive = true }
+                        coroutineScope.launch {
+                            val acknowledged = safetyLimitsPreferences.isSafetyLimitsAcknowledged()
+                            val targetRoute = if (acknowledged) Destination.Home.route else Destination.SafetyLimits.route
+                            navController.navigate(targetRoute) {
+                                popUpTo(Destination.Signup.route) { inclusive = true }
+                            }
                         }
                     },
                     viewModel = signupViewModel
