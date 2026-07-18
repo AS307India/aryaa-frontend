@@ -26,10 +26,15 @@
             android:exported="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Aryaa.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
