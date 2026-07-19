@@ -75,6 +75,7 @@ fun NearbyServicesSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = AryaaColors.Navy,
         dragHandle = { BottomSheetDefaults.DragHandle(color = AryaaColors.NavyBorder) }
     ) {
