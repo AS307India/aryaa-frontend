@@ -82,8 +82,9 @@ fun NearbyServicesSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp)
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
             // Title
             Text(
                 text = "Nearby Help",
