@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var locationSharePreferences: com.as307.aryaa.data.local.LocationSharePreferences
     @Inject lateinit var locationShareManager: com.as307.aryaa.service.LocationShareManager
     @Inject lateinit var api: com.as307.aryaa.data.remote.AryaaApi
+    @Inject lateinit var incomingLocationShareHolder: com.as307.aryaa.ui.screens.locationshare.IncomingLocationShareHolder
 
     private var isVolumeTriggerEnabled = true
 
@@ -113,10 +114,11 @@ class MainActivity : ComponentActivity() {
  
         val hasEmergencyExtras = intent?.hasExtra("sosEventId") == true && !intent.getStringExtra("sosEventId").isNullOrBlank()
         val isEmergency = intent?.action == "com.as307.aryaa.action.OPEN_EMERGENCY_RESPONSE" || hasEmergencyExtras
-        val startDestination = if (isEmergency) {
-            Destination.Home.route
-        } else {
-            intent.getStringExtra("start_destination") ?: Destination.Splash.route
+        val isLocationShare = intent?.action == "com.as307.aryaa.action.OPEN_LOCATION_SHARE"
+        val startDestination = when {
+            isEmergency -> Destination.Home.route
+            isLocationShare -> Destination.LocationShare.route
+            else -> intent.getStringExtra("start_destination") ?: Destination.Splash.route
         }
 
         setContent {
@@ -137,6 +139,7 @@ class MainActivity : ComponentActivity() {
                         safetyLimitsPreferences = safetyLimitsPreferences,
                         locationSharePreferences = locationSharePreferences,
                         locationShareManager = locationShareManager,
+                        incomingLocationShareHolder = incomingLocationShareHolder,
                         api = api
                     )
                 }

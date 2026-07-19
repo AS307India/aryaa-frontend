@@ -1,12 +1,14 @@
 package com.as307.aryaa.ui.screens.locationshare
 
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,10 +41,15 @@ fun LocationSharingScreen(
     locationSharePreferences: LocationSharePreferences,
     locationShareManager: LocationShareManager,
     activeLocationShare: ActiveLocationShare?,
+    incomingLocationShare: IncomingLocationShare?,
+    onDismissIncomingShare: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var customDurationStr by remember { mutableStateOf("") }
+    var useCustomDuration by remember { mutableStateOf(false) }
 
     var contacts by remember { mutableStateOf<List<ContactDto>>(emptyList()) }
     var selectedContactIds by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -86,6 +94,60 @@ fun LocationSharingScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        incomingLocationShare?.let { incoming ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = AryaaColors.NavyCard),
+                border = BorderStroke(1.dp, AryaaColors.Blue)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "📍 Live Location Share",
+                        fontFamily = InterFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = AryaaColors.Blue
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "${incoming.sharerName} is sharing their live location with you (for ${incoming.durationMinutes} min).",
+                        fontFamily = InterFamily,
+                        fontSize = 13.sp,
+                        color = AryaaColors.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(incoming.shareUrl))
+                                context.startActivity(intent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AryaaColors.Blue),
+                            modifier = Modifier.weight(1.5f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Track on Map", fontFamily = InterFamily, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                        OutlinedButton(
+                            onClick = onDismissIncomingShare,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AryaaColors.Slate),
+                            border = BorderStroke(1.dp, AryaaColors.NavyBorder),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Dismiss", fontFamily = InterFamily, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+        }
+
         if (isActive) {
             // --- Active Session Card ---
             ActiveSessionCard(
@@ -116,8 +178,8 @@ fun LocationSharingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                listOf(30 to "30 min", 60 to "1 hour", 120 to "2 hours").forEach { (value, label) ->
-                    val isSelected = selectedDuration == value
+                listOf(30 to "30 min", 60 to "1 hr", 120 to "2 hr").forEach { (value, label) ->
+                    val isSelected = !useCustomDuration && selectedDuration == value
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -125,7 +187,10 @@ fun LocationSharingScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (isSelected) AryaaColors.Blue else AryaaColors.NavyCard)
                             .border(1.dp, if (isSelected) AryaaColors.Blue else AryaaColors.NavyBorder, RoundedCornerShape(8.dp))
-                            .clickable { selectedDuration = value },
+                            .clickable {
+                                useCustomDuration = false
+                                selectedDuration = value
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -137,6 +202,52 @@ fun LocationSharingScreen(
                         )
                     }
                 }
+
+                // Custom Option Chip
+                val isCustomSelected = useCustomDuration
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isCustomSelected) AryaaColors.Blue else AryaaColors.NavyCard)
+                        .border(1.dp, if (isCustomSelected) AryaaColors.Blue else AryaaColors.NavyBorder, RoundedCornerShape(8.dp))
+                        .clickable { useCustomDuration = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Custom",
+                        fontFamily = InterFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                        color = if (isCustomSelected) AryaaColors.White else AryaaColors.Slate
+                    )
+                }
+            }
+
+            if (useCustomDuration) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = customDurationStr,
+                    onValueChange = { input ->
+                        if (input.all { it.isDigit() }) {
+                            customDurationStr = input
+                        }
+                    },
+                    label = { Text("Duration in minutes (5 to 480)", color = AryaaColors.Slate) },
+                    placeholder = { Text("e.g. 45", color = AryaaColors.Slate.copy(alpha = 0.5f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = AryaaColors.White,
+                        unfocusedTextColor = AryaaColors.White,
+                        focusedBorderColor = AryaaColors.Blue,
+                        unfocusedBorderColor = AryaaColors.NavyBorder,
+                        focusedContainerColor = AryaaColors.NavyCard,
+                        unfocusedContainerColor = AryaaColors.NavyCard
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -224,20 +335,30 @@ fun LocationSharingScreen(
                         error = "Please select at least one contact."
                         return@Button
                     }
+                    val finalDuration = if (useCustomDuration) {
+                        val parsed = customDurationStr.toIntOrNull()
+                        if (parsed == null || parsed < 5 || parsed > 480) {
+                            error = "Please enter a valid duration between 5 and 480 minutes."
+                            return@Button
+                        }
+                        parsed
+                    } else {
+                        selectedDuration
+                    }
                     error = null
                     isLoading = true
                     scope.launch {
                         try {
                             val response = api.startLocationShare(
                                 LocationShareStartRequest(
-                                    durationMinutes = selectedDuration,
+                                    durationMinutes = finalDuration,
                                     contactIds = selectedContactIds.toList()
                                 )
                             )
                             if (response.isSuccessful) {
                                 val body = response.body()!!
                                 val expiresAt = java.time.Instant.now()
-                                    .plusSeconds((selectedDuration * 60).toLong())
+                                    .plusSeconds((finalDuration * 60).toLong())
                                     .toString()
                                 locationSharePreferences.saveSession(
                                     sessionId = body.sessionId,

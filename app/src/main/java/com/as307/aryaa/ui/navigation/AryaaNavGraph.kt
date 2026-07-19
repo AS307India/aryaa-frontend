@@ -70,6 +70,7 @@ fun AryaaNavGraph(
     safetyLimitsPreferences: com.as307.aryaa.data.local.SafetyLimitsPreferences,
     locationSharePreferences: com.as307.aryaa.data.local.LocationSharePreferences,
     locationShareManager: com.as307.aryaa.service.LocationShareManager,
+    incomingLocationShareHolder: com.as307.aryaa.ui.screens.locationshare.IncomingLocationShareHolder,
     api: com.as307.aryaa.data.remote.AryaaApi
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -324,7 +325,8 @@ fun AryaaNavGraph(
                         navController.navigate(Destination.LocationShare.route) {
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    incomingLocationShare = incomingLocationShareHolder.incoming.collectAsState().value
                 )
             }
 
@@ -484,6 +486,8 @@ fun AryaaNavGraph(
                     locationSharePreferences = locationSharePreferences,
                     locationShareManager = locationShareManager,
                     activeLocationShare = locationShareManager.activeShare.collectAsState().value,
+                    incomingLocationShare = incomingLocationShareHolder.incoming.collectAsState().value,
+                    onDismissIncomingShare = { incomingLocationShareHolder.clear() },
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

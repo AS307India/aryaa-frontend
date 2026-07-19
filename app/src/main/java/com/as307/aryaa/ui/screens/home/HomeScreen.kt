@@ -72,7 +72,8 @@ fun HomeScreen(
     activeEmergency: com.as307.aryaa.ui.screens.emergency.EmergencySosData?,
     onNavigateToEmergencyResponse: () -> Unit,
     activeLocationShare: ActiveLocationShare?,
-    onNavigateToLocationShare: () -> Unit
+    onNavigateToLocationShare: () -> Unit,
+    incomingLocationShare: com.as307.aryaa.ui.screens.locationshare.IncomingLocationShare?
 ) {
     val scope = rememberCoroutineScope()
     var userName by remember { mutableStateOf("") }
@@ -185,6 +186,27 @@ fun HomeScreen(
             ) {
                 Text(
                     text = "📍 Sharing location with ${share.contactCount} contact${if (share.contactCount != 1) "s" else ""} — tap to manage",
+                    color = AryaaColors.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // Incoming Location Sharing Banner (Royal Blue)
+        incomingLocationShare?.let { incoming ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AryaaColors.Blue.copy(alpha = 0.85f))
+                    .clickable(onClick = onNavigateToLocationShare)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "📍 ${incoming.sharerName} is sharing their live location — tap to view map",
                     color = AryaaColors.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,

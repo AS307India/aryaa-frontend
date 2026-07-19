@@ -30,6 +30,9 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var emergencyStateHolder: com.as307.aryaa.ui.screens.emergency.EmergencyStateHolder
 
+    @Inject
+    lateinit var incomingLocationShareHolder: com.as307.aryaa.ui.screens.locationshare.IncomingLocationShareHolder
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
@@ -124,10 +127,19 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             val shareUrl = message.data["shareUrl"] ?: ""
             val sessionId = message.data["sessionId"] ?: ""
             val durationMinutes = message.data["durationMinutes"] ?: "?"
+            // Persist in-memory so the banner survives notification dismissal
+            incomingLocationShareHolder.set(
+                com.as307.aryaa.ui.screens.locationshare.IncomingLocationShare(
+                    sessionId = sessionId,
+                    sharerName = sharerName,
+                    shareUrl = shareUrl,
+                    durationMinutes = durationMinutes
+                )
+            )
             showLocationShareNotification(
                 sessionId = sessionId,
                 title = message.notification?.title ?: "📍 $sharerName is sharing their location",
-                body = message.notification?.body ?: "Live for $durationMinutes min — tap to view",
+                body = message.notification?.body ?: "Live for $durationMinutes min — tap to view in ARYAA",
                 shareUrl = shareUrl,
                 stopped = false
             )
@@ -136,6 +148,7 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
         if (message.data["type"] == "LOCATION_SHARE_STOPPED") {
             val sharerName = message.data["sharerName"] ?: "A contact"
             val sessionId = message.data["sessionId"] ?: ""
+            incomingLocationShareHolder.clear()
             // Dismiss any existing location share notification for this session
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             notificationManager.cancel(("lshare_$sessionId").hashCode())
@@ -251,7 +264,16 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
 
         val notificationId = ("lshare_$sessionId").hashCode()
 
-        // If stopped and no shareUrl, just show a dismissible info notification
+        // Tapping the notification opens the app to the Location Sharing screen
+        val appIntent = Intent(this, MainActivity::class.java).apply {
+            action = "com.as307.aryaa.action.OPEN_LOCATION_SHARE"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val appPi = PendingIntent.getActivity(
+            this, notificationId, appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_notification_sync)
             .setContentTitle(title)
@@ -260,15 +282,16 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
             .setColor(0xFF3B82F6.toInt()) // Royal Blue
             .setPriority(if (stopped) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setContentIntent(appPi)
 
         if (!stopped && shareUrl.isNotBlank()) {
-            // Deep link to browser to view the live map
+            // "View Map" action opens the browser tracking page
             val openIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(shareUrl)).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             val pi = PendingIntent.getActivity(
                 this,
-                notificationId,
+                notificationId + 1000,
                 openIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
