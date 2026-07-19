@@ -65,6 +65,15 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".service.DeadZoneReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="com.as307.aryaa.action.CONFIRM_SAFE" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".ui.screens.medicalid.MedicalIdActivity"
             android:exported="true"

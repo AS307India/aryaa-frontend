@@ -8,6 +8,7 @@ data class PlaybookDto(
     val victimName: String,
     val victimPhone: String,
     val status: String,
+    val publicTrackUrl: String? = null,
     val latitude: Double?,
     val longitude: Double?,
     val w3wAddress: String?,

@@ -3,6 +3,7 @@ package com.as307.aryaa.data.local
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,9 @@ open class MedicalIdPreferences @Inject constructor(
         private val KEY_EMERGENCY_CONTACT_PHONE = stringPreferencesKey("medical_id_emergency_contact_phone")
         private val KEY_ORGAN_DONOR = booleanPreferencesKey("medical_id_organ_donor")
         private val KEY_NOTES = stringPreferencesKey("medical_id_notes")
+        private val KEY_HOME_ADDRESS = stringPreferencesKey("profile_home_address")
+        private val KEY_HOME_LATITUDE = doublePreferencesKey("profile_home_latitude")
+        private val KEY_HOME_LONGITUDE = doublePreferencesKey("profile_home_longitude")
     }
 
     open suspend fun getBloodType(): String? = dataStore.data.map { it[KEY_BLOOD_TYPE] }.first()
@@ -72,5 +76,20 @@ open class MedicalIdPreferences @Inject constructor(
     open fun getNotesFlow(): Flow<String?> = dataStore.data.map { it[KEY_NOTES] }
     open suspend fun setNotes(value: String?) {
         dataStore.edit { prefs -> if (value == null) prefs.remove(KEY_NOTES) else prefs[KEY_NOTES] = value }
+    }
+
+    open suspend fun getHomeAddress(): String? = dataStore.data.map { it[KEY_HOME_ADDRESS] }.first()
+    open suspend fun setHomeAddress(value: String?) {
+        dataStore.edit { prefs -> if (value == null) prefs.remove(KEY_HOME_ADDRESS) else prefs[KEY_HOME_ADDRESS] = value }
+    }
+
+    open suspend fun getHomeLatitude(): Double? = dataStore.data.map { it[KEY_HOME_LATITUDE] }.first()
+    open suspend fun setHomeLatitude(value: Double?) {
+        dataStore.edit { prefs -> if (value == null) prefs.remove(KEY_HOME_LATITUDE) else prefs[KEY_HOME_LATITUDE] = value }
+    }
+
+    open suspend fun getHomeLongitude(): Double? = dataStore.data.map { it[KEY_HOME_LONGITUDE] }.first()
+    open suspend fun setHomeLongitude(value: Double?) {
+        dataStore.edit { prefs -> if (value == null) prefs.remove(KEY_HOME_LONGITUDE) else prefs[KEY_HOME_LONGITUDE] = value }
     }
 }

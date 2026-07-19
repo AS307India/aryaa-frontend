@@ -18,17 +18,23 @@ class DeadZoneRepositoryImpl @Inject constructor(
         durationMinutes: Int,
         latitude: Double?,
         longitude: Double?,
-        accuracy: Double?
+        accuracy: Double?,
+        mode: String?,
+        destination: String?,
+        intervalMinutes: Int?
     ): Result<DeadZoneResponse> {
         return try {
             val request = DeadZoneStartRequest(
                 durationMinutes = durationMinutes,
                 latitude = latitude,
                 longitude = longitude,
-                accuracy = accuracy
+                accuracy = accuracy,
+                mode = mode,
+                destination = destination,
+                intervalMinutes = intervalMinutes
             )
             android.util.Log.d("DEADZONE_DEBUG",
-                "startDeadZone request: durationMinutes=$durationMinutes lat=$latitude lng=$longitude accuracy=$accuracy")
+                "startDeadZone request: durationMinutes=$durationMinutes lat=$latitude lng=$longitude accuracy=$accuracy mode=$mode")
             val response = api.startDeadZone(request)
             android.util.Log.d("DEADZONE_DEBUG",
                 "startDeadZone response: code=${response.code()} message='${response.message()}'")
@@ -39,6 +45,10 @@ class DeadZoneRepositoryImpl @Inject constructor(
                 preferences.setActiveCheckInId(data.checkInId)
                 preferences.setExpectedBackAt(data.expectedBackAt)
                 preferences.setGracePeriodEnd(data.gracePeriodEnd)
+                preferences.setMode(data.mode)
+                preferences.setDestination(data.destination)
+                preferences.setIntervalMinutes(data.intervalMinutes)
+                preferences.setLocationShareSessionId(data.locationShareSessionId)
                 Result.success(data)
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -60,8 +70,16 @@ class DeadZoneRepositoryImpl @Inject constructor(
             android.util.Log.d("DEADZONE_DEBUG",
                 "checkIn response: code=${response.code()} message='${response.message()}'")
             if (response.isSuccessful && response.body() != null) {
-                preferences.clear()
-                Result.success(response.body()!!)
+                val data = response.body()!!
+                if (data.status == "PENDING") {
+                    // Heartbeat ping success: update new interval timers
+                    preferences.setExpectedBackAt(data.expectedBackAt)
+                    preferences.setGracePeriodEnd(data.gracePeriodEnd)
+                } else {
+                    // Standard session finished
+                    preferences.clear()
+                }
+                Result.success(data)
             } else {
                 val errorBody = response.errorBody()?.string()
                 android.util.Log.w("DEADZONE_DEBUG",
@@ -112,6 +130,10 @@ class DeadZoneRepositoryImpl @Inject constructor(
                     preferences.setActiveCheckInId(checkIn.checkInId)
                     preferences.setExpectedBackAt(checkIn.expectedBackAt)
                     preferences.setGracePeriodEnd(checkIn.gracePeriodEnd)
+                    preferences.setMode(checkIn.mode)
+                    preferences.setDestination(checkIn.destination)
+                    preferences.setIntervalMinutes(checkIn.intervalMinutes)
+                    preferences.setLocationShareSessionId(checkIn.locationShareSessionId)
                 }
                 Result.success(checkIn)
             } else {

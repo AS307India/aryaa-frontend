@@ -18,6 +18,9 @@ import retrofit2.http.DELETE
 import retrofit2.http.Path
 import retrofit2.http.Query
 import com.as307.aryaa.data.remote.dto.NearbyServiceResponse
+import com.as307.aryaa.data.remote.dto.ProfileAddressRequest
+import com.as307.aryaa.data.remote.dto.SafetyReportRequest
+import com.as307.aryaa.data.remote.dto.SafetyMapPin
 
 interface AryaaApi {
 
@@ -125,4 +128,22 @@ interface AryaaApi {
         @Query("lng") lng: Double,
         @Query("type") type: String
     ): Response<List<NearbyServiceResponse>>
+
+    @POST("api/users/profile-address")
+    suspend fun updateProfileAddress(
+        @Body request: ProfileAddressRequest
+    ): Response<Unit>
+
+    @POST("api/safety-reports")
+    suspend fun submitSafetyReport(
+        @Body request: SafetyReportRequest
+    ): Response<Unit>
+
+    @GET("api/safety-map/pins")
+    suspend fun getSafetyMapPins(): Response<List<SafetyMapPin>>
+
+    @POST("api/safety-reports/{id}/dispute")
+    suspend fun disputeSafetyReport(
+        @Path("id") reportId: String
+    ): Response<Unit>
 }

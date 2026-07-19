@@ -50,6 +50,15 @@ class AryaaApplication : Application() {
             }
             manager.createNotificationChannel(activeChannel)
 
+            val deadzoneChannel = NotificationChannel(
+                "aryaa_deadzone_reminder",
+                "Safety Check-In Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Reminders to check in when entering dead zones or safe walks"
+            }
+            manager.createNotificationChannel(deadzoneChannel)
+
             // Delete old channel versions to force clean recreation with correct settings.
             // Channels are immutable after creation — any device that received older versions
             // before the alarm sound was added will silently keep using the old (silent)

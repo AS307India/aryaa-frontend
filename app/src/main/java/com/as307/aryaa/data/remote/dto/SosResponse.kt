@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class SosResponse(
     val sosEventId: String,
     val status: String,
+    val publicTrackUrl: String? = null,
     val triggeredAt: String,
     val contacts: List<SosContactSnapshot>,
     val w3wAddress: String? = null,

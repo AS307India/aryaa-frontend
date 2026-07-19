@@ -498,6 +498,24 @@ fun EmergencyResponseScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("SHARE COORDINATION DETAILS", color = AryaaColors.White, fontWeight = FontWeight.Bold)
                         }
+
+                        val trackingUrl = playbookOpt?.publicTrackUrl
+                        if (!trackingUrl.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(trackingUrl))
+                                    Toast.makeText(context, "Tracking link copied — safe to share with bystanders or police", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AryaaColors.Blue),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Filled.ContentCopy, contentDescription = null, tint = AryaaColors.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("COPY PUBLIC TRACKING LINK", color = AryaaColors.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
 

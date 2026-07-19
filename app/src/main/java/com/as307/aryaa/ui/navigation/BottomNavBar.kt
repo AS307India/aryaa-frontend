@@ -3,6 +3,7 @@ package com.as307.aryaa.ui.navigation
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
@@ -13,7 +14,6 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.as307.aryaa.ui.theme.AryaaColors
@@ -22,7 +22,8 @@ enum class BottomNavTab(val label: String, val route: String) {
     HOME("Home", Destination.Home.route),
     CONTACTS("Contacts", Destination.Contacts.route),
     SOS("SOS", Destination.Sos.route),
-    PROFILE("Profile", "profile") // reserved — implemented in a later unit
+    MAP("Safety Map", Destination.SafetyMap.route),
+    PROFILE("Profile", Destination.Profile.route)
 }
 
 @Composable
@@ -45,6 +46,7 @@ fun BottomNavBar(
                             BottomNavTab.HOME -> Icons.Filled.Home
                             BottomNavTab.CONTACTS -> Icons.Filled.People
                             BottomNavTab.SOS -> Icons.Filled.Warning
+                            BottomNavTab.MAP -> Icons.Filled.Map
                             BottomNavTab.PROFILE -> Icons.Filled.Person
                         },
                         contentDescription = tab.label,
@@ -55,7 +57,7 @@ fun BottomNavBar(
                 label = {
                     Text(
                         text = tab.label,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         color = if (selected) AryaaColors.Saffron else AryaaColors.Slate
                     )
                 },

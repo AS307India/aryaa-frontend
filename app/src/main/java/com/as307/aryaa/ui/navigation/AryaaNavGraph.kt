@@ -45,6 +45,7 @@ import com.as307.aryaa.ui.screens.practice.PracticeSosScreen
 import com.as307.aryaa.ui.screens.practice.PracticeSummaryScreen
 import com.as307.aryaa.ui.screens.deadzone.DeadZoneScreen
 import com.as307.aryaa.ui.screens.locationshare.LocationSharingScreen
+import com.as307.aryaa.ui.screens.safetymap.SafetyMapScreen
 import com.as307.aryaa.ui.theme.AryaaColors
 
 // Routes that belong to the authenticated shell (show bottom nav)
@@ -52,7 +53,8 @@ private val AUTHENTICATED_ROUTES = setOf(
     Destination.Home.route,
     Destination.Contacts.route,
     Destination.Sos.route,
-    Destination.Profile.route
+    Destination.Profile.route,
+    Destination.SafetyMap.route
 )
 
 @Composable
@@ -180,6 +182,9 @@ fun AryaaNavGraph(
                             launchSingleTop = true
                         }
                         BottomNavTab.SOS -> navController.navigate(Destination.Sos.route) {
+                            launchSingleTop = true
+                        }
+                        BottomNavTab.MAP -> navController.navigate(Destination.SafetyMap.route) {
                             launchSingleTop = true
                         }
                         BottomNavTab.PROFILE -> navController.navigate(Destination.Profile.route) {
@@ -492,6 +497,10 @@ fun AryaaNavGraph(
                     onDismissIncomingShare = { incomingLocationShareHolder.clear() },
                     onNavigateBack = { navController.popBackStack() }
                 )
+            }
+
+            composable(Destination.SafetyMap.route) {
+                SafetyMapScreen(api = api)
             }
         }
     }

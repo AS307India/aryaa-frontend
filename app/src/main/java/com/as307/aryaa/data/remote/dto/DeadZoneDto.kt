@@ -7,7 +7,10 @@ data class DeadZoneStartRequest(
     val durationMinutes: Int,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val accuracy: Double? = null
+    val accuracy: Double? = null,
+    val mode: String? = null,
+    val destination: String? = null,
+    val intervalMinutes: Int? = null
 )
 
 @Serializable
@@ -22,7 +25,13 @@ data class DeadZoneResponse(
     val startedAt: String? = null,
     val expectedBackAt: String? = null,
     val gracePeriodEnd: String? = null,
-    val checkedInAt: String? = null
+    val checkedInAt: String? = null,
+    val mode: String? = null,
+    val destination: String? = null,
+    val intervalMinutes: Int? = null,
+    val locationShareSessionId: String? = null,
+    val shareToken: String? = null,
+    val shareUrl: String? = null
 )
 
 @Serializable

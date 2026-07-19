@@ -10,6 +10,8 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.as307.aryaa.data.local.MedicalIdPreferences
+import com.as307.aryaa.data.remote.AryaaApi
+import com.as307.aryaa.data.remote.dto.ProfileAddressRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MedicalIdViewModel @Inject constructor(
     private val medicalIdPreferences: MedicalIdPreferences,
-    private val notifier: MedicalIdNotifier
+    private val notifier: MedicalIdNotifier,
+    private val api: AryaaApi
 ) : ViewModel() {
 
     private val _bloodType = MutableStateFlow<String?>("Unknown")
@@ -48,6 +51,15 @@ class MedicalIdViewModel @Inject constructor(
     private val _notes = MutableStateFlow<String?>("")
     val notes: StateFlow<String?> = _notes.asStateFlow()
 
+    private val _homeAddress = MutableStateFlow<String?>("")
+    val homeAddress: StateFlow<String?> = _homeAddress.asStateFlow()
+
+    private val _homeLatitude = MutableStateFlow<String?>("")
+    val homeLatitude: StateFlow<String?> = _homeLatitude.asStateFlow()
+
+    private val _homeLongitude = MutableStateFlow<String?>("")
+    val homeLongitude: StateFlow<String?> = _homeLongitude.asStateFlow()
+
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
 
@@ -70,6 +82,9 @@ class MedicalIdViewModel @Inject constructor(
             _emergencyContactPhone.value = medicalIdPreferences.getEmergencyContactPhone() ?: ""
             _organDonor.value = medicalIdPreferences.getOrganDonor()
             _notes.value = medicalIdPreferences.getNotes() ?: ""
+            _homeAddress.value = medicalIdPreferences.getHomeAddress() ?: ""
+            _homeLatitude.value = medicalIdPreferences.getHomeLatitude()?.toString() ?: ""
+            _homeLongitude.value = medicalIdPreferences.getHomeLongitude()?.toString() ?: ""
         }
     }
 
@@ -81,6 +96,9 @@ class MedicalIdViewModel @Inject constructor(
     fun setEmergencyContactPhone(value: String?) { _emergencyContactPhone.value = value }
     fun setOrganDonor(value: Boolean) { _organDonor.value = value }
     fun setNotes(value: String?) { _notes.value = value }
+    fun setHomeAddress(value: String?) { _homeAddress.value = value }
+    fun setHomeLatitude(value: String?) { _homeLatitude.value = value }
+    fun setHomeLongitude(value: String?) { _homeLongitude.value = value }
 
     fun saveMedicalId(
         blood: String?,
@@ -90,7 +108,10 @@ class MedicalIdViewModel @Inject constructor(
         contactName: String?,
         contactPhone: String?,
         donor: Boolean,
-        noteTexts: String?
+        noteTexts: String?,
+        homeAddr: String? = null,
+        homeLat: String? = null,
+        homeLng: String? = null
     ) {
         viewModelScope.launch {
             medicalIdPreferences.setBloodType(blood)
@@ -101,6 +122,13 @@ class MedicalIdViewModel @Inject constructor(
             medicalIdPreferences.setEmergencyContactPhone(contactPhone)
             medicalIdPreferences.setOrganDonor(donor)
             medicalIdPreferences.setNotes(noteTexts)
+
+            // Save home address locally
+            medicalIdPreferences.setHomeAddress(homeAddr?.ifBlank { null })
+            val parsedLat = homeLat?.toDoubleOrNull()
+            val parsedLng = homeLng?.toDoubleOrNull()
+            medicalIdPreferences.setHomeLatitude(parsedLat)
+            medicalIdPreferences.setHomeLongitude(parsedLng)
 
             _isSaved.value = true
 
@@ -118,6 +146,22 @@ class MedicalIdViewModel @Inject constructor(
                 showMedicalIdNotification()
             } else {
                 cancelMedicalIdNotification()
+            }
+
+            // Non-blocking: push home address to server for dispute eligibility validation.
+            // Failures are silent — the user can retry by saving again.
+            if (parsedLat != null && parsedLng != null) {
+                try {
+                    api.updateProfileAddress(
+                        ProfileAddressRequest(
+                            homeAddress = homeAddr?.ifBlank { null },
+                            homeLatitude = parsedLat,
+                            homeLongitude = parsedLng
+                        )
+                    )
+                } catch (e: Exception) {
+                    // Non-blocking; local save already succeeded — server sync best-effort
+                }
             }
         }
     }

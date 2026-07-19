@@ -26,4 +26,5 @@ sealed class Destination(val route: String) {
     }
     object DeadZone : Destination("dead_zone")
     object LocationShare : Destination("location_share")
+    object SafetyMap : Destination("safety_map")
 }

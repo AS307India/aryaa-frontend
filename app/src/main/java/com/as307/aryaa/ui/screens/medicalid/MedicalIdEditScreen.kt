@@ -81,6 +81,9 @@ fun MedicalIdEditScreen(
     val emergencyContactPhone by viewModel.emergencyContactPhone.collectAsState()
     val organDonor by viewModel.organDonor.collectAsState()
     val notes by viewModel.notes.collectAsState()
+    val homeAddress by viewModel.homeAddress.collectAsState()
+    val homeLatitude by viewModel.homeLatitude.collectAsState()
+    val homeLongitude by viewModel.homeLongitude.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
 
     var bloodDropdownExpanded by remember { mutableStateOf(false) }
@@ -97,7 +100,10 @@ fun MedicalIdEditScreen(
             contactName = emergencyContactName,
             contactPhone = emergencyContactPhone,
             donor = organDonor,
-            noteTexts = notes
+            noteTexts = notes,
+            homeAddr = homeAddress,
+            homeLat = homeLatitude,
+            homeLng = homeLongitude
         )
     }
 
@@ -299,6 +305,60 @@ fun MedicalIdEditScreen(
                 )
             }
 
+            // Form Section "Dispute Proximity Verification"
+            MedicalFormSection(title = "DISPUTE VERIFICATION ADDRESS") {
+                Text(
+                    text = "Used to verify your proximity to a Safety Map pin when filing a dispute. Must be within 50m of the report location.",
+                    color = AryaaColors.Slate,
+                    fontFamily = InterFamily,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                MedicalIdTextField(
+                    label = "Home Address (optional label)",
+                    value = homeAddress ?: "",
+                    onValueChange = { viewModel.setHomeAddress(it) }
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = homeLatitude ?: "",
+                        onValueChange = { viewModel.setHomeLatitude(it) },
+                        label = { Text("Latitude", color = AryaaColors.Slate) },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AryaaColors.White,
+                            unfocusedTextColor = AryaaColors.White,
+                            focusedBorderColor = AryaaColors.Saffron,
+                            unfocusedBorderColor = AryaaColors.NavyBorder,
+                            focusedContainerColor = AryaaColors.Navy,
+                            unfocusedContainerColor = AryaaColors.Navy
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = homeLongitude ?: "",
+                        onValueChange = { viewModel.setHomeLongitude(it) },
+                        label = { Text("Longitude", color = AryaaColors.Slate) },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AryaaColors.White,
+                            unfocusedTextColor = AryaaColors.White,
+                            focusedBorderColor = AryaaColors.Saffron,
+                            unfocusedBorderColor = AryaaColors.NavyBorder,
+                            focusedContainerColor = AryaaColors.Navy,
+                            unfocusedContainerColor = AryaaColors.Navy
+                        ),
+                        singleLine = true
+                    )
+                }
+                Text(
+                    text = "💡 Tip: Open Google Maps, long-press your home location to see exact coordinates.",
+                    color = AryaaColors.Slate,
+                    fontFamily = InterFamily,
+                    fontSize = 11.sp
+                )
+            }
+
             // Preview Section
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -344,7 +404,10 @@ fun MedicalIdEditScreen(
                             contactName = emergencyContactName,
                             contactPhone = emergencyContactPhone,
                             donor = organDonor,
-                            noteTexts = notes
+                            noteTexts = notes,
+                            homeAddr = homeAddress,
+                            homeLat = homeLatitude,
+                            homeLng = homeLongitude
                         )
                     }
                 },
