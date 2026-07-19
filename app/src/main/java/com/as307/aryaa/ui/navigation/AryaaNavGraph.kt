@@ -336,6 +336,7 @@ fun AryaaNavGraph(
 
             composable(Destination.Sos.route) {
                 SosScreen(
+                    api = api,
                     onNavigateToContacts = {
                         navController.navigate(Destination.Contacts.route) {
                             popUpTo(Destination.Sos.route) { inclusive = false }
@@ -420,6 +421,7 @@ fun AryaaNavGraph(
 
             composable(Destination.EmergencyResponse.route) {
                 com.as307.aryaa.ui.screens.emergency.EmergencyResponseScreen(
+                    api = api,
                     onDismiss = {
                         emergencyStateHolder.clear()
                         coroutineScope.launch {

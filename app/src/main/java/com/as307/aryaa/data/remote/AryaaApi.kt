@@ -16,6 +16,8 @@ import retrofit2.http.POST
 import retrofit2.http.GET
 import retrofit2.http.DELETE
 import retrofit2.http.Path
+import retrofit2.http.Query
+import com.as307.aryaa.data.remote.dto.NearbyServiceResponse
 
 interface AryaaApi {
 
@@ -116,4 +118,11 @@ interface AryaaApi {
     suspend fun stopLocationShare(
         @Path("sessionId") sessionId: String
     ): Response<Unit>
+
+    @GET("api/nearby-services")
+    suspend fun getNearbyServices(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("type") type: String
+    ): Response<List<NearbyServiceResponse>>
 }

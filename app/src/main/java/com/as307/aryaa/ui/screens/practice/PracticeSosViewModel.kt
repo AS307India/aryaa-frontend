@@ -139,7 +139,9 @@ class PracticeSosViewModel @Inject constructor(
                 triggeredAt = java.time.Instant.now().toString(),
                 contacts = snapshots,
                 w3wAddress = "///practice.mode.only",
-                accuracy = location?.accuracy?.toDouble() ?: 10.0
+                accuracy = location?.accuracy?.toDouble() ?: 10.0,
+                latitude = location?.latitude ?: 18.5204,
+                longitude = location?.longitude ?: 73.8567
             )
         }
     }

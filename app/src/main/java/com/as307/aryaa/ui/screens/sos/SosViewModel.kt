@@ -34,7 +34,9 @@ sealed class SosUiState {
         val triggeredAt: String,
         val contacts: List<SosContactSnapshot>,
         val w3wAddress: String? = null,
-        val accuracy: Double? = null
+        val accuracy: Double? = null,
+        val latitude: Double? = null,
+        val longitude: Double? = null
     ) : SosUiState()
     object Cancelling : SosUiState()
     data class Cancelled(val at: String) : SosUiState()
@@ -108,7 +110,9 @@ class SosViewModel @Inject constructor(
                          triggeredAt = triggeredAt,
                          contacts = contacts,
                          w3wAddress = w3wAddress,
-                         accuracy = accuracy
+                         accuracy = accuracy,
+                         latitude = persisted?.latitude,
+                         longitude = persisted?.longitude
                      )
                     com.as307.aryaa.util.TestEnv.logDebug("SOS_DEBUG", "startSos CALLED")
                     sosServiceManager.startSos(
@@ -139,7 +143,9 @@ class SosViewModel @Inject constructor(
                          triggeredAt = persisted.triggeredAt,
                          contacts = contacts,
                          w3wAddress = persisted.w3wAddress,
-                         accuracy = persisted.accuracy
+                         accuracy = persisted.accuracy,
+                         latitude = persisted.latitude,
+                         longitude = persisted.longitude
                      )
                     com.as307.aryaa.util.TestEnv.logDebug("SOS_DEBUG", "startSos CALLED")
                     sosServiceManager.startSos(
@@ -241,7 +247,9 @@ class SosViewModel @Inject constructor(
                     triggeredAt = response.triggeredAt,
                     contacts = response.contacts,
                     w3wAddress = response.w3wAddress,
-                    accuracy = location?.accuracy?.toDouble()
+                    accuracy = location?.accuracy?.toDouble(),
+                    latitude = location?.latitude,
+                    longitude = location?.longitude
                 )
                 com.as307.aryaa.util.TestEnv.logDebug("SOS_DEBUG", "startSos CALLED")
                 sosServiceManager.startSos(response.sosEventId, response.contacts, response.w3wAddress)

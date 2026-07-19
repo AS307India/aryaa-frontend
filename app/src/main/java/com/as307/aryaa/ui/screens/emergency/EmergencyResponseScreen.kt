@@ -49,12 +49,15 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun EmergencyResponseScreen(
+    api: com.as307.aryaa.data.remote.AryaaApi,
     onDismiss: () -> Unit,
     viewModel: EmergencyResponseViewModel = hiltViewModel()
 ) {
     val emergencyOpt by viewModel.activeEmergency.collectAsState()
     val playbookOpt by viewModel.playbookState.collectAsState()
     val isResponding by viewModel.isResponding.collectAsState()
+
+    var showNearbySheet by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -424,6 +427,29 @@ fun EmergencyResponseScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("CALL 112 & COPY SPEECH TEMPLATE", color = AryaaColors.White, fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedButton(
+                            onClick = { showNearbySheet = true },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AryaaColors.Blue),
+                            border = BorderStroke(1.dp, AryaaColors.Blue),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("📍 FIND NEARBY SERVICES NEAR VICTIM", fontWeight = FontWeight.Bold)
+                        }
+
+                        if (showNearbySheet) {
+                            val targetLat = lat ?: 18.5204
+                            val targetLng = lng ?: 73.8567
+                            com.as307.aryaa.ui.screens.nearby.NearbyServicesSheet(
+                                latitude = targetLat,
+                                longitude = targetLng,
+                                api = api,
+                                onDismiss = { showNearbySheet = false }
+                            )
                         }
                     }
                 }

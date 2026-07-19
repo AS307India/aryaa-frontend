@@ -47,6 +47,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun SosScreen(
+    api: com.as307.aryaa.data.remote.AryaaApi,
     onNavigateToContacts: () -> Unit,
     viewModel: SosViewModel = hiltViewModel()
 ) {
@@ -63,6 +64,7 @@ fun SosScreen(
     }
 
     var dismissLocationWarning by remember { mutableStateOf(false) }
+    var showNearbySheet by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -456,6 +458,37 @@ fun SosScreen(
                             modifier = Modifier.weight(1f)
                         )
                     }
+                }
+            }
+
+            if (currentState is SosUiState.Active) {
+                Button(
+                    onClick = { showNearbySheet = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AryaaColors.Blue,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ) {
+                    Text(
+                        text = "📍 Nearby Help",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (showNearbySheet) {
+                    val lat = currentState.latitude ?: 18.5204
+                    val lng = currentState.longitude ?: 73.8567
+                    com.as307.aryaa.ui.screens.nearby.NearbyServicesSheet(
+                        latitude = lat,
+                        longitude = lng,
+                        api = api,
+                        onDismiss = { showNearbySheet = false }
+                    )
                 }
             }
 
