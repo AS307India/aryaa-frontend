@@ -176,7 +176,17 @@ class LocationShareService : Service() {
     }
 
     private fun handleStop() {
+        // 1. Clear in-memory state immediately (synchronous) so the UI
+        //    updates on the very first tap — the StateFlow observers see
+        //    null before we even touch the network or prefs.
+        locationShareManager.clearActiveShare()
+
         val sessionId = currentSessionId
+        stopLocationUpdates()
+
+        // 2. Best-effort async cleanup: call API and clear prefs.
+        //    We intentionally do this BEFORE stopSelf() so the scope is
+        //    still alive when the coroutine runs.
         serviceScope.launch {
             if (sessionId != null) {
                 try {
@@ -185,12 +195,15 @@ class LocationShareService : Service() {
                     android.util.Log.w("LocationShareService", "Stop API call failed: ${e.message}")
                 }
             }
-            locationSharePreferences.clearSession()
-            locationShareManager.clearActiveShare()
+            try {
+                locationSharePreferences.clearSession()
+            } catch (e: Exception) {
+                android.util.Log.w("LocationShareService", "Prefs clear failed: ${e.message}")
+            }
+            // 3. Stop the service only after async work is done
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
-        stopLocationUpdates()
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
     }
 
     private fun buildNotification(contactCount: Int): Notification {

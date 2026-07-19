@@ -92,6 +92,9 @@ fun LocationSharingScreen(
                 shareUrl = activeLocationShare!!.shareUrl,
                 expiresAt = activeLocationShare.expiresAt,
                 onStop = {
+                    // Clear state immediately so the Home banner disappears
+                    // before the service has finished its async stop.
+                    locationShareManager.clearActiveShare()
                     val intent = Intent(context, LocationShareService::class.java).apply {
                         action = LocationShareService.ACTION_STOP_SHARE
                     }
@@ -250,7 +253,9 @@ fun LocationSharingScreen(
                                         contactCount = selectedContactIds.size
                                     )
                                 )
-                                // Start foreground service
+                                // Start foreground service — service also calls setActiveShare
+                                // but we already set it above so the screen recomposes
+                                // immediately to the active view without navigating away.
                                 val intent = Intent(context, LocationShareService::class.java).apply {
                                     action = LocationShareService.ACTION_START_SHARE
                                     putExtra(LocationShareService.EXTRA_SESSION_ID, body.sessionId)
@@ -259,7 +264,8 @@ fun LocationSharingScreen(
                                     putExtra(LocationShareService.EXTRA_CONTACT_COUNT, selectedContactIds.size)
                                 }
                                 context.startForegroundService(intent)
-                                onNavigateBack()
+                                // No navigation — activeLocationShare state change triggers
+                                // recomposition to show the ActiveSessionCard with share URL
                             } else {
                                 error = "Failed to start sharing. Please try again."
                             }

@@ -118,6 +118,35 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
                 tier = tier
             )
         }
+
+        if (message.data["type"] == "LOCATION_SHARE_STARTED") {
+            val sharerName = message.data["sharerName"] ?: "A contact"
+            val shareUrl = message.data["shareUrl"] ?: ""
+            val sessionId = message.data["sessionId"] ?: ""
+            val durationMinutes = message.data["durationMinutes"] ?: "?"
+            showLocationShareNotification(
+                sessionId = sessionId,
+                title = message.notification?.title ?: "📍 $sharerName is sharing their location",
+                body = message.notification?.body ?: "Live for $durationMinutes min — tap to view",
+                shareUrl = shareUrl,
+                stopped = false
+            )
+        }
+
+        if (message.data["type"] == "LOCATION_SHARE_STOPPED") {
+            val sharerName = message.data["sharerName"] ?: "A contact"
+            val sessionId = message.data["sessionId"] ?: ""
+            // Dismiss any existing location share notification for this session
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.cancel(("lshare_$sessionId").hashCode())
+            showLocationShareNotification(
+                sessionId = sessionId,
+                title = "📍 $sharerName stopped sharing",
+                body = "Location sharing session has ended.",
+                shareUrl = "",
+                stopped = true
+            )
+        }
     }
 
     private fun showIncomingSosNotification(
@@ -198,6 +227,55 @@ class AryaaFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         Log.d("SOUND_DEBUG", "Posting notification id=$notificationId on channel=$CHANNEL_ID soundUri=$soundUri")
+        notificationManager.notify(notificationId, builder.build())
+    }
+
+    private fun showLocationShareNotification(
+        sessionId: String,
+        title: String,
+        body: String,
+        shareUrl: String,
+        stopped: Boolean
+    ) {
+        val channelId = "aryaa_location_share"
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId,
+                "ARYAA Location Sharing",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = "Notifications when a contact shares their location" }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notificationId = ("lshare_$sessionId").hashCode()
+
+        // If stopped and no shareUrl, just show a dismissible info notification
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_notification_sync)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setColor(0xFF3B82F6.toInt()) // Royal Blue
+            .setPriority(if (stopped) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+
+        if (!stopped && shareUrl.isNotBlank()) {
+            // Deep link to browser to view the live map
+            val openIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(shareUrl)).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            val pi = PendingIntent.getActivity(
+                this,
+                notificationId,
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.setContentIntent(pi)
+                .addAction(android.R.drawable.ic_menu_view, "View Map", pi)
+        }
+
         notificationManager.notify(notificationId, builder.build())
     }
 
