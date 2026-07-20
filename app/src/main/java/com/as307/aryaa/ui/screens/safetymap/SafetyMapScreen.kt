@@ -3,9 +3,13 @@ package com.as307.aryaa.ui.screens.safetymap
 import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceError
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebChromeClient
+import android.webkit.ConsoleMessage
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -129,9 +133,11 @@ fun SafetyMapScreen(api: AryaaApi) {
             isLoading = true
             errorMessage = null
             try {
+                Log.e("WebViewConsole", "loadPins api call starting...")
                 val response = api.getSafetyMapPins()
                 if (response.isSuccessful) {
                     pins = response.body() ?: emptyList()
+                    Log.e("WebViewConsole", "loadPins api call success: found ${pins.size} pins")
                     // Inject pins into the Leaflet map
                     val pinsJson = pins.joinToString(prefix = "[", postfix = "]") { pin ->
                         val disputedFlag = if (pin.disputed) "true" else "false"
@@ -141,9 +147,11 @@ fun SafetyMapScreen(api: AryaaApi) {
                     targetWebView?.evaluateJavascript("window.loadPins($pinsJson);", null)
                 } else {
                     errorMessage = "Failed to load safety map data."
+                    Log.e("WebViewConsole", "loadPins api call error code: ${response.code()}")
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}"
+                Log.e("WebViewConsole", "loadPins api call exception", e)
             }
             isLoading = false
         }
@@ -158,16 +166,34 @@ fun SafetyMapScreen(api: AryaaApi) {
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
+                    layoutParams = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
                     settings.useWideViewPort = true
                     settings.loadWithOverviewMode = true
                     
-                    webChromeClient = WebChromeClient()
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                            Log.e("WebViewConsole", "Console Log [Line ${consoleMessage?.lineNumber()}]: ${consoleMessage?.message()}")
+                            return true
+                        }
+                    }
+                    
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?) = false
+                        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                            Log.e("WebViewConsole", "onPageStarted triggered for: $url")
+                        }
                         override fun onPageFinished(view: WebView?, url: String?) {
+                            Log.e("WebViewConsole", "onPageFinished triggered for: $url")
                             loadPins(view)
+                        }
+                        override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                            Log.e("WebViewConsole", "Received resource error: ${error?.description} (code: ${error?.errorCode}) for URL: ${request?.url}")
                         }
                     }
                     
@@ -191,10 +217,19 @@ fun SafetyMapScreen(api: AryaaApi) {
                             reportLng = lng
                             showReportSheet = true
                         }
+
+                        @JavascriptInterface
+                        fun onMapError(errorMsg: String) {
+                            Log.e("WebViewConsole", "JS Map Error Interface: $errorMsg")
+                            scope.launch {
+                                Toast.makeText(context, "Map Error: $errorMsg", Toast.LENGTH_LONG).show()
+                            }
+                        }
                     }, "AndroidBridge")
 
+                    Log.e("WebViewConsole", "Calling loadDataWithBaseURL...")
                     loadDataWithBaseURL(
-                        "https://tile.openstreetmap.org",
+                        "https://app.local/",
                         leafletHtml,
                         "text/html",
                         "utf-8",
@@ -650,8 +685,8 @@ private fun buildLeafletHtml(): String = """
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   html, body {
     height: 100%;
@@ -663,6 +698,8 @@ private fun buildLeafletHtml(): String = """
   #map {
     height: 100%;
     width: 100%;
+    min-height: 100vh;
+    min-width: 100vw;
   }
   .custom-pin {
     display: flex; align-items: center; justify-content: center;
@@ -682,67 +719,82 @@ private fun buildLeafletHtml(): String = """
 <body>
 <div id="map"></div>
 <script>
-const CATEGORY_COLORS = {
-  'HARASSMENT': '#ef5350',
-  'POOR_LIGHTING': '#5c6bc0',
-  'THEFT': '#ff7043',
-  'UNSAFE_ROAD': '#ffa726',
-  'OTHER': '#78909c'
-};
-const CATEGORY_EMOJI = {
-  'HARASSMENT': '⚠️',
-  'POOR_LIGHTING': '🌑',
-  'THEFT': '🔒',
-  'UNSAFE_ROAD': '🚧',
-  'OTHER': '📍'
-};
-const CATEGORY_LABELS = {
-  'HARASSMENT': 'Harassment',
-  'POOR_LIGHTING': 'Poor Lighting',
-  'THEFT': 'Theft',
-  'UNSAFE_ROAD': 'Unsafe Road',
-  'OTHER': 'Other'
-};
+try {
+  const CATEGORY_COLORS = {
+    'HARASSMENT': '#ef5350',
+    'POOR_LIGHTING': '#5c6bc0',
+    'THEFT': '#ff7043',
+    'UNSAFE_ROAD': '#ffa726',
+    'OTHER': '#78909c'
+  };
+  const CATEGORY_EMOJI = {
+    'HARASSMENT': '⚠️',
+    'POOR_LIGHTING': '🌑',
+    'THEFT': '🔒',
+    'UNSAFE_ROAD': '🚧',
+    'OTHER': '📍'
+  };
+  const CATEGORY_LABELS = {
+    'HARASSMENT': 'Harassment',
+    'POOR_LIGHTING': 'Poor Lighting',
+    'THEFT': 'Theft',
+    'UNSAFE_ROAD': 'Unsafe Road',
+    'OTHER': 'Other'
+  };
 
-const map = L.map('map', { zoomControl: true }).setView([20.5937, 78.9629], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap',
-  maxZoom: 19
-}).addTo(map);
+  const map = L.map('map', { zoomControl: true }).setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
 
-const markersLayer = L.layerGroup().addTo(map);
+  const markersLayer = L.layerGroup().addTo(map);
 
-// Leaflet native contextmenu event maps perfectly to:
-// - Long-press on mobile/touchscreen devices
-// - Right-click on desktop browsers
-map.on('contextmenu', function(e) {
-  if (e.latlng) {
-    AndroidBridge.onMapLongPress(e.latlng.lat, e.latlng.lng);
-  }
-});
-
-window.loadPins = function(pins) {
-  markersLayer.clearLayers();
-  pins.forEach(function(pin) {
-    const color = CATEGORY_COLORS[pin.category] || '#78909c';
-    const emoji = CATEGORY_EMOJI[pin.category] || '📍';
-    const size = Math.min(48, 32 + pin.count * 2);
-    const icon = L.divIcon({
-      className: '',
-      html: '<div class="custom-pin" style="width:' + size + 'px;height:' + size + 'px;background:' + color + (pin.disputed ? ';border-color:#ffa726' : '') + '">' + emoji + '</div>',
-      iconSize: [size, size],
-      iconAnchor: [size/2, size/2]
-    });
-    const marker = L.marker([pin.lat, pin.lng], { icon: icon }).addTo(markersLayer);
-    marker.on('click', function() {
-      const idsJson = JSON.stringify(pin.reportIds);
-      AndroidBridge.onPinTapped(pin.lat, pin.lng, pin.category, pin.count, pin.disputed, idsJson);
-    });
-    if (pin.disputed) {
-      marker.bindPopup('<b>' + emoji + ' ' + (CATEGORY_LABELS[pin.category]||pin.category) + '</b><br>' + pin.count + ' reports · <span style="color:#ffa726">Under Review</span>');
+  // Leaflet native contextmenu event maps perfectly to:
+  // - Long-press on mobile/touchscreen devices
+  // - Right-click on desktop browsers
+  map.on('contextmenu', function(e) {
+    if (e.latlng) {
+      AndroidBridge.onMapLongPress(e.latlng.lat, e.latlng.lng);
     }
   });
-};
+
+  window.loadPins = function(pins) {
+    try {
+      map.invalidateSize();
+      markersLayer.clearLayers();
+      pins.forEach(function(pin) {
+        const color = CATEGORY_COLORS[pin.category] || '#78909c';
+        const emoji = CATEGORY_EMOJI[pin.category] || '📍';
+        const size = Math.min(48, 32 + pin.count * 2);
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="custom-pin" style="width:' + size + 'px;height:' + size + 'px;background:' + color + (pin.disputed ? ';border-color:#ffa726' : '') + '">' + emoji + '</div>',
+          iconSize: [size, size],
+          iconAnchor: [size/2, size/2]
+        });
+        const marker = L.marker([pin.lat, pin.lng], { icon: icon }).addTo(markersLayer);
+        marker.on('click', function() {
+          const idsJson = JSON.stringify(pin.reportIds);
+          AndroidBridge.onPinTapped(pin.lat, pin.lng, pin.category, pin.count, pin.disputed, idsJson);
+        });
+        if (pin.disputed) {
+          marker.bindPopup('<b>' + emoji + ' ' + (CATEGORY_LABELS[pin.category]||pin.category) + '</b><br>' + pin.count + ' reports · <span style="color:#ffa726">Under Review</span>');
+        }
+      });
+    } catch (err) {
+      AndroidBridge.onMapError("loadPins error: " + err.message);
+    }
+  };
+  
+  // Call size invalidation to force layout checks
+  setTimeout(function() {
+    map.invalidateSize();
+  }, 100);
+  
+} catch (globalErr) {
+  AndroidBridge.onMapError("Global init error: " + globalErr.message);
+}
 </script>
 </body>
 </html>
