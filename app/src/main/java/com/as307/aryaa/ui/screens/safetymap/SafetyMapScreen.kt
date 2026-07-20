@@ -5,6 +5,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -123,7 +124,7 @@ fun SafetyMapScreen(api: AryaaApi) {
     // WebView reference for JS calls
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
-    fun loadPins() {
+    fun loadPins(targetWebView: WebView? = webViewRef) {
         scope.launch {
             isLoading = true
             errorMessage = null
@@ -137,7 +138,7 @@ fun SafetyMapScreen(api: AryaaApi) {
                         val idsJson = pin.reportIds.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
                         "{\"lat\":${pin.latitude},\"lng\":${pin.longitude},\"category\":\"${pin.category}\",\"count\":${pin.reportCount},\"disputed\":$disputedFlag,\"reportIds\":$idsJson}"
                     }
-                    webViewRef?.evaluateJavascript("window.loadPins($pinsJson);", null)
+                    targetWebView?.evaluateJavascript("window.loadPins($pinsJson);", null)
                 } else {
                     errorMessage = "Failed to load safety map data."
                 }
@@ -159,12 +160,17 @@ fun SafetyMapScreen(api: AryaaApi) {
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    settings.useWideViewPort = true
+                    settings.loadWithOverviewMode = true
+                    
+                    webChromeClient = WebChromeClient()
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?) = false
                         override fun onPageFinished(view: WebView?, url: String?) {
-                            loadPins()
+                            loadPins(view)
                         }
                     }
+                    
                     // JS Bridge: called when user taps a pin on the map
                     addJavascriptInterface(object {
                         @JavascriptInterface
@@ -643,13 +649,21 @@ private fun buildLeafletHtml(): String = """
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0d1b2a; }
-  #map { width: 100vw; height: 100vh; }
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #0d1b2a;
+  }
+  #map {
+    height: 100%;
+    width: 100%;
+  }
   .custom-pin {
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%; border: 3px solid white;
@@ -698,17 +712,13 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const markersLayer = L.layerGroup().addTo(map);
 
-// Long-press to report
-let pressTimer = null;
-map.on('mousedown touchstart', function(e) {
-  pressTimer = setTimeout(function() {
-    const lat = e.latlng ? e.latlng.lat : e.touches[0].latLng.lat;
-    const lng = e.latlng ? e.latlng.lng : e.touches[0].latLng.lng;
-    AndroidBridge.onMapLongPress(lat, lng);
-  }, 600);
-});
-map.on('mouseup touchend mousemove', function() {
-  clearTimeout(pressTimer);
+// Leaflet native contextmenu event maps perfectly to:
+// - Long-press on mobile/touchscreen devices
+// - Right-click on desktop browsers
+map.on('contextmenu', function(e) {
+  if (e.latlng) {
+    AndroidBridge.onMapLongPress(e.latlng.lat, e.latlng.lng);
+  }
 });
 
 window.loadPins = function(pins) {
