@@ -72,6 +72,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.as307.aryaa.data.remote.AryaaApi
 import com.as307.aryaa.data.remote.dto.SafetyMapPin
 import com.as307.aryaa.data.remote.dto.SafetyReportRequest
+import com.as307.aryaa.data.remote.dto.SafetyReport
 import com.as307.aryaa.ui.theme.AryaaColors
 import com.as307.aryaa.ui.theme.InterFamily
 import kotlinx.coroutines.launch
@@ -100,6 +101,7 @@ fun SafetyMapScreen(api: AryaaApi) {
     val scope = rememberCoroutineScope()
 
     var pins by remember { mutableStateOf<List<SafetyMapPin>>(emptyList()) }
+    var myReports by remember { mutableStateOf<List<SafetyReport>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -134,6 +136,14 @@ fun SafetyMapScreen(api: AryaaApi) {
             errorMessage = null
             try {
                 Log.e("WebViewConsole", "loadPins api call starting...")
+                
+                // Fetch user's own reports
+                val myResp = api.getMySafetyReports()
+                if (myResp.isSuccessful) {
+                    myReports = myResp.body() ?: emptyList()
+                    Log.e("WebViewConsole", "loadPins: fetched ${myReports.size} user reports")
+                }
+                
                 val response = api.getSafetyMapPins()
                 if (response.isSuccessful) {
                     pins = response.body() ?: emptyList()
@@ -155,6 +165,10 @@ fun SafetyMapScreen(api: AryaaApi) {
             }
             isLoading = false
         }
+    }
+
+    LaunchedEffect(Unit) {
+        loadPins()
     }
 
     // Build the Leaflet HTML
@@ -363,6 +377,96 @@ fun SafetyMapScreen(api: AryaaApi) {
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // User's own reports section
+                val myReportsInCluster = myReports.filter { it.id in pin.reportIds }
+                if (myReportsInCluster.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(AryaaColors.Navy)
+                            .border(1.dp, AryaaColors.NavyBorder, RoundedCornerShape(12.dp))
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "👤 Your Reports in this Cluster",
+                            color = AryaaColors.White,
+                            fontFamily = InterFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "You submitted the following report(s) here. You can delete them to retract your feedback.",
+                            color = AryaaColors.Slate,
+                            fontFamily = InterFamily,
+                            fontSize = 12.sp
+                        )
+
+                        myReportsInCluster.forEach { report ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(AryaaColors.NavyCard, RoundedCornerShape(8.dp))
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "${CATEGORY_EMOJI[report.category] ?: "📍"} ${CATEGORY_LABELS[report.category] ?: report.category}",
+                                        color = AryaaColors.White,
+                                        fontFamily = InterFamily,
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    )
+                                    if (report.description.isNotEmpty()) {
+                                        Text(
+                                            text = report.description,
+                                            color = AryaaColors.Slate,
+                                            fontFamily = InterFamily,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            try {
+                                                val resp = api.deleteSafetyReport(report.id)
+                                                if (resp.isSuccessful) {
+                                                    Toast.makeText(context, "Report removed successfully.", Toast.LENGTH_SHORT).show()
+                                                    
+                                                    // Refresh map and user reports
+                                                    loadPins()
+                                                    
+                                                    // If this was the last report in this cluster, close the bottom sheet
+                                                    if (myReportsInCluster.size <= 1 && pin.reportIds.size <= 3) {
+                                                        selectedPin = null
+                                                    }
+                                                } else {
+                                                    Toast.makeText(context, "Failed to remove report: ${resp.code()}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Network error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AryaaColors.Crimson,
+                                        contentColor = AryaaColors.White
+                                    ),
+                                    shape = RoundedCornerShape(6.dp),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("Remove", fontFamily = InterFamily, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Dispute section
                 if (!pin.disputed) {

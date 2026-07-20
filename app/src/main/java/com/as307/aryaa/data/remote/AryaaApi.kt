@@ -146,4 +146,12 @@ interface AryaaApi {
     suspend fun disputeSafetyReport(
         @Path("id") reportId: String
     ): Response<Unit>
+
+    @GET("api/safety-reports/me")
+    suspend fun getMySafetyReports(): Response<List<com.as307.aryaa.data.remote.dto.SafetyReport>>
+
+    @DELETE("api/safety-reports/{id}")
+    suspend fun deleteSafetyReport(
+        @Path("id") reportId: String
+    ): Response<Unit>
 }

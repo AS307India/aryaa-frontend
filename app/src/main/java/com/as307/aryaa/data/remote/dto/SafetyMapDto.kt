@@ -28,3 +28,17 @@ data class SafetyMapPin(
     val reportIds: List<String>,
     val categoryBreakdown: Map<String, Int>
 )
+
+@Serializable
+data class SafetyReport(
+    val id: String,
+    val userId: String,
+    val userPhone: String,
+    val category: String,
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val createdAt: String,
+    val status: String,
+    val isPublicSpace: Boolean
+)
